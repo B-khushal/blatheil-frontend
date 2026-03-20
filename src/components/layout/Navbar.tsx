@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
+import { buildWhatsAppUrl, CONTACT_INSTAGRAM_URL } from "@/lib/contact";
 
 const navLinks = [
   { label: "Home", path: "/" },

@@ -114,10 +114,6 @@ export default function Login() {
               Sign up
             </Link>
           </p>
-
-          <p className="text-[10px] text-muted-foreground text-center mt-6">
-            Admin: blatheil134@gmail.com / password123
-          </p>
         </div>
       </motion.div>
     </div>

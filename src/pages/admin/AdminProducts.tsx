@@ -6,7 +6,7 @@ import { Product } from "@/types/product";
 import { ImageUpload } from "@/components/ImageUpload";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { formatPrice } from "@/lib/formatPrice";
+import { useCurrency } from "@/context/CurrencyContext";
 
 const emptyProduct = {
   name: "",
@@ -25,6 +25,7 @@ const allSizes = ["S", "M", "L", "XL", "XXL", "One Size"];
 
 const AdminProducts = () => {
   const { token } = useAuth();
+  const { formatPrice } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");

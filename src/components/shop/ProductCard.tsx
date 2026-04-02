@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, Eye } from "lucide-react";
 import { Product } from "@/types/product";
-import { formatPrice } from "@/lib/formatPrice";
+import { useCurrency } from "@/context/CurrencyContext";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
@@ -19,6 +19,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
   const { isInWishlist, toggleWishlist, pendingProductIds } = useWishlist();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
   const wishlistActive = isInWishlist(product._id);

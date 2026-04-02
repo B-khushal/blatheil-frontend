@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Monitor } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const adminLinks = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
+  { label: "Website Editor", path: "/admin/website-editor", icon: Monitor, adminOnly: true },
   { label: "Products", path: "/admin/products", icon: Package },
   { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
   { label: "Users", path: "/admin/users", icon: Users, adminOnly: true },
@@ -14,8 +15,8 @@ const adminLinks = [
 ];
 
 const AdminSidebar = () => {
-  const { user, logout } = useAdminAuth();
-  const { logout: logoutStorefront } = useAuth();
+  const { user: adminUser, logout } = useAdminAuth();
+  const { logout: logoutStorefront, user: backendUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -26,7 +27,8 @@ const AdminSidebar = () => {
     navigate("/", { replace: true });
   };
 
-  const visibleLinks = adminLinks.filter((l) => !l.adminOnly || user?.role === "admin");
+  const activeUser = backendUser || adminUser;
+  const visibleLinks = adminLinks.filter((l) => !l.adminOnly || activeUser?.role === "admin");
 
   return (
     <motion.aside
@@ -95,10 +97,10 @@ const AdminSidebar = () => {
       <div className="border-t border-border p-3">
         {!collapsed && (
           <div className="mb-2 px-2">
-            <p className="text-xs font-heading uppercase tracking-wider text-foreground truncate">{user?.name}</p>
-            <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+            <p className="text-xs font-heading uppercase tracking-wider text-foreground truncate">{activeUser?.name}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{activeUser?.email}</p>
             <span className="inline-block mt-1 text-[9px] font-heading uppercase tracking-widest px-2 py-0.5 rounded-sm gold-gradient text-primary-foreground">
-              {user?.role}
+              {activeUser?.role}
             </span>
           </div>
         )}

@@ -1,10 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Truck, RefreshCw, Printer, FileText } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useReactToPrint } from "react-to-print";
+import { AdminInvoicePrint } from "@/components/admin/AdminInvoicePrint";
+import { AdminPackageSlip } from "@/components/admin/AdminPackageSlip";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { formatPrice } from "@/lib/formatPrice";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface Order {
   _id: string;
@@ -15,6 +19,10 @@ interface Order {
   items: { productId: { name: string }; quantity: number; size?: string }[];
   shippingAddress?: string;
   phone?: string;
+  shipping_status?: string;
+  courier_name?: string;
+  awb_code?: string;
+  shipment_id?: string;
 }
 
 const statusOptions: Order["status"][] = ["pending", "confirmed", "shipped", "delivered"];
@@ -26,23 +34,70 @@ const statusColors: Record<string, string> = {
   delivered: "bg-green-400/10 text-green-400 border-green-400/30",
 };
 
+const shippingStatusColors: Record<string, string> = {
+  pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
+  processing: "bg-blue-400/10 text-blue-400 border-blue-400/30",
+  shipped: "bg-indigo-500/10 text-indigo-300 border-indigo-500/30",
+  "in transit": "bg-indigo-500/10 text-indigo-300 border-indigo-500/30",
+  "out for delivery": "bg-orange-500/10 text-orange-300 border-orange-500/30",
+  delivered: "bg-green-500/10 text-green-500 border-green-500/30",
+};
+
 const AdminOrders = () => {
   const { token } = useAuth();
+  const { formatPrice } = useCurrency();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
   const perPage = 5;
 
+  const invoiceRef = useRef<HTMLDivElement>(null);
+  const slipRef = useRef<HTMLDivElement>(null);
+
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+
+  const executePrintInvoice = useReactToPrint({
+    contentRef: invoiceRef,
+  });
+
+  const executePrintSlip = useReactToPrint({
+    contentRef: slipRef,
+  });
+
+  const triggerPrintInvoice = (order: Order) => {
+    setPrintingOrder(order);
+    setTimeout(() => {
+      if (executePrintInvoice) executePrintInvoice();
+    }, 100);
+  };
+
+  const triggerPrintSlip = (order: Order) => {
+    setPrintingOrder(order);
+    setTimeout(() => {
+      if (executePrintSlip) executePrintSlip();
+    }, 100);
+  };
 
   useEffect(() => {
     fetchOrders();
   }, [token]);
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      fetchOrders(true);
+    }, 25000);
+
+    return () => window.clearInterval(interval);
+  }, [token]);
+
+  const fetchOrders = async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
+
     try {
       const res = await fetch(`${API_URL}/orders`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -53,7 +108,9 @@ const AdminOrders = () => {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load orders");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -82,6 +139,29 @@ const AdminOrders = () => {
       toast.success(`Order updated to ${status}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update order");
+    }
+  };
+
+  const handleShipmentSync = async (orderId: string, force = false) => {
+    try {
+      const res = await fetch(`${API_URL}/shiprocket/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ orderId, force }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json();
+        throw new Error(payload.message || "Shipment sync failed");
+      }
+
+      toast.success(force ? "Shiprocket sync retried" : "Shipment created");
+      await fetchOrders();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to sync shipment");
     }
   };
 
@@ -137,6 +217,14 @@ const AdminOrders = () => {
                     <span className={`text-[10px] font-heading uppercase tracking-widest px-2 py-0.5 border rounded-sm ${statusColors[order.status]}`}>
                       {order.status}
                     </span>
+                    <span
+                      className={`text-[10px] font-heading uppercase tracking-widest px-2 py-0.5 border rounded-sm ${
+                        shippingStatusColors[(order.shipping_status || "pending").toLowerCase()] ||
+                        shippingStatusColors.pending
+                      }`}
+                    >
+                      {order.shipping_status || "Pending"}
+                    </span>
                   </div>
                   <h3 className="font-heading text-sm uppercase tracking-wide mt-1">{order.userId?.name}</h3>
                   <p className="text-xs text-muted-foreground">{order.phone} · {order.shippingAddress}</p>
@@ -155,6 +243,18 @@ const AdminOrders = () => {
                     </span>
                   ))}
                 </div>
+                <div className="flex flex-wrap items-center gap-2 mb-3 text-xs text-muted-foreground">
+                  <span>Courier: {order.courier_name || "Not assigned"}</span>
+                  <span>•</span>
+                  <span>AWB: {order.awb_code || "Pending"}</span>
+                  {order.awb_code && (
+                    <Link to={`/track-order/${order.awb_code}`}>
+                      <button className="px-2 py-1 border border-border rounded-sm text-primary hover:border-primary transition-colors">
+                        Track Order
+                      </button>
+                    </Link>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-heading uppercase tracking-widest text-muted-foreground">Update Status:</span>
                   {statusOptions.map((s) => (
@@ -171,6 +271,41 @@ const AdminOrders = () => {
                       {s}
                     </button>
                   ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <button
+                    onClick={() => handleShipmentSync(order._id, false)}
+                    disabled={Boolean(order.shipment_id)}
+                    className={`text-[10px] font-heading uppercase tracking-widest px-2 py-1 border rounded-sm transition-colors flex items-center gap-1 ${
+                      order.shipment_id
+                        ? "border-border/50 text-muted-foreground/60 cursor-not-allowed"
+                        : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                    }`}
+                  >
+                    <Truck className="w-3 h-3" />
+                    Create Shipment
+                  </button>
+                  <button
+                    onClick={() => handleShipmentSync(order._id, true)}
+                    className="text-[10px] font-heading uppercase tracking-widest px-2 py-1 border rounded-sm transition-colors border-border text-muted-foreground hover:border-primary hover:text-primary flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Retry Shiprocket Sync
+                  </button>
+                  <button
+                    onClick={() => triggerPrintInvoice(order)}
+                    className="text-[10px] font-heading uppercase tracking-widest px-2 py-1 border rounded-sm transition-colors border-border text-muted-foreground hover:border-primary hover:text-primary flex items-center gap-1 ml-auto sm:ml-0"
+                  >
+                    <FileText className="w-3 h-3" />
+                    Print Invoice
+                  </button>
+                  <button
+                    onClick={() => triggerPrintSlip(order)}
+                    className="text-[10px] font-heading uppercase tracking-widest px-2 py-1 border rounded-sm transition-colors border-border text-muted-foreground hover:border-primary hover:text-primary flex items-center gap-1"
+                  >
+                    <Printer className="w-3 h-3" />
+                    Print Slip
+                  </button>
                 </div>
               </div>
             </div>
@@ -192,6 +327,12 @@ const AdminOrders = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Hidden Print Components */}
+      <div className="absolute top-0 left-0 opacity-0 -z-50 pointer-events-none overflow-hidden" style={{ width: 0, height: 0 }}>
+        {printingOrder && <AdminInvoicePrint ref={invoiceRef} order={printingOrder} currencyFormatPrice={formatPrice} />}
+        {printingOrder && <AdminPackageSlip ref={slipRef} order={printingOrder} currencyFormatPrice={formatPrice} />}
+      </div>
     </AdminLayout>
   );
 };

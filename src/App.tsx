@@ -6,6 +6,7 @@ import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { AdminAuthProvider } from "@/context/AdminAuthContext";
+import { CurrencyProvider } from "@/context/CurrencyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Storefront pages
@@ -22,6 +23,9 @@ import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import MyOrders from "./pages/MyOrders";
+import TrackOrder from "./pages/TrackOrder";
+import OrderSuccess from "./pages/OrderSuccess";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -29,6 +33,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSettings from "./pages/admin/AdminSettings";
+import WebsiteEditor from "./pages/admin/WebsiteEditor";
 
 const queryClient = new QueryClient();
 
@@ -39,9 +44,10 @@ const App = () => (
         <WishlistProvider>
           <CartProvider>
             <AdminAuthProvider>
-              <Sonner />
-              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                <Routes>
+              <CurrencyProvider>
+                <Sonner />
+                <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                  <Routes>
                 {/* Auth */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
@@ -54,6 +60,9 @@ const App = () => (
                 <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
                 <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                 <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+                <Route path="/my-orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+                <Route path="/track-order/:awb" element={<TrackOrder />} />
+                <Route path="/order-success" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
@@ -65,10 +74,12 @@ const App = () => (
                 <Route path="/admin/orders" element={<ProtectedRoute requiredRole="admin"><AdminOrders /></ProtectedRoute>} />
                 <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
                 <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
+                <Route path="/admin/website-editor" element={<ProtectedRoute requiredRole="admin"><WebsiteEditor /></ProtectedRoute>} />
 
                 <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
+                  </Routes>
+                </BrowserRouter>
+              </CurrencyProvider>
             </AdminAuthProvider>
           </CartProvider>
         </WishlistProvider>

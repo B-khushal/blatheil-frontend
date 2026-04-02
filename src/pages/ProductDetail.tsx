@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { buildWhatsAppUrl } from "@/lib/contact";
 import { fetchProductById } from "@/lib/products";
 import { Product } from "@/types/product";
-import { formatPrice } from "@/lib/formatPrice";
+import { useCurrency } from "@/context/CurrencyContext";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
 
 const ProductDetail = () => {
@@ -23,6 +23,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const { formatPrice } = useCurrency();
   const { isInWishlist, toggleWishlist, pendingProductIds } = useWishlist();
 
   useEffect(() => {

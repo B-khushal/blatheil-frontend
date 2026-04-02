@@ -7,7 +7,7 @@ import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 const Layout = ({ children }: { children: ReactNode }) => (
   <div className="min-h-screen bg-background">
     <Navbar />
-    <main className="pb-16 md:pb-0">{children}</main>
+    <main className="pt-16 md:pt-20 pb-16 md:pb-0">{children}</main>
     <Footer />
     <BottomNav />
     <FloatingWhatsApp />

@@ -1,25 +1,106 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, User } from "lucide-react";
+import { Shield, User, DollarSign, Loader2, Save } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { useAdminAuth } from "@/context/AdminAuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY, CONTACT_INSTAGRAM_HANDLE } from "@/lib/contact";
 
 const AdminSettings = () => {
-  const { user, changePassword } = useAdminAuth();
+  const { user, token, changePassword, updateProfile } = useAuth();
   const [oldPw, setOldPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
+  
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [isProfileUpdating, setIsProfileUpdating] = useState(false);
+  const [isPwUpdating, setIsPwUpdating] = useState(false);
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const [usdRate, setUsdRate] = useState<number>(83);
+  const [isRateLoading, setIsRateLoading] = useState(false);
+  const [isFetchingRate, setIsFetchingRate] = useState(true);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.data?.usdRate) {
+            setUsdRate(data.data.usdRate);
+          }
+        }
+      } catch (err) {
+        toast.error("Failed to load currency settings");
+      } finally {
+        setIsFetchingRate(false);
+      }
+    };
+    fetchRate();
+  }, [API_URL]);
+
+  useEffect(() => {
+    if (user) {
+      setProfileName(user.name || "");
+      setProfileEmail(user.email || "");
+    }
+  }, [user]);
+
+  const handleRateUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) {
+       toast.error("Not authenticated");
+       return;
+    }
+    setIsRateLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/settings/currency-rate`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ usdRate })
+      });
+      if (!res.ok) throw new Error("Failed to update rate");
+      toast.success("Currency rate updated globally!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error updating rate");
+    } finally {
+      setIsRateLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPw.length < 6) { toast.error("Minimum 6 characters"); return; }
     if (newPw !== confirmPw) { toast.error("Passwords don't match"); return; }
-    const success = changePassword(oldPw, newPw);
-    if (!success) { toast.error("Current password incorrect"); return; }
-    setOldPw(""); setNewPw(""); setConfirmPw("");
-    toast.success("Password updated successfully!");
+    setIsPwUpdating(true);
+    try {
+      await changePassword(oldPw, newPw);
+      setOldPw(""); setNewPw(""); setConfirmPw("");
+      toast.success("Password updated successfully!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Password update failed");
+    } finally {
+      setIsPwUpdating(false);
+    }
+  };
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsProfileUpdating(true);
+    try {
+      await updateProfile(profileName, profileEmail);
+      toast.success("Profile updated successfully!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Profile update failed");
+    } finally {
+      setIsProfileUpdating(false);
+    }
   };
 
   return (
@@ -29,27 +110,46 @@ const AdminSettings = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Profile */}
-          <div className="glass-card p-6">
+          <div className="glass-card p-6 flex flex-col">
             <div className="flex items-center gap-3 mb-6">
               <User className="w-5 h-5 text-primary" />
-              <h2 className="font-heading uppercase tracking-widest text-sm">Profile</h2>
+              <h2 className="font-heading uppercase tracking-widest text-sm">Profile Details</h2>
             </div>
-            <div className="space-y-4">
+            <form onSubmit={handleProfileUpdate} className="space-y-4 flex-1 flex flex-col">
               <div>
-                <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">Name</label>
-                <input value={user?.name || ""} disabled className="w-full bg-secondary/50 border border-border rounded-sm px-3 py-2 text-sm text-muted-foreground" />
+                <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">Full Name</label>
+                <input 
+                  value={profileName} 
+                  onChange={(e) => setProfileName(e.target.value)} 
+                  required
+                  className="w-full bg-transparent border border-border rounded-sm px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none transition-colors" 
+                />
               </div>
               <div>
-                <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">Email</label>
-                <input value={user?.email || ""} disabled className="w-full bg-secondary/50 border border-border rounded-sm px-3 py-2 text-sm text-muted-foreground" />
+                <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">Valid Email</label>
+                <input 
+                  type="email"
+                  value={profileEmail} 
+                  onChange={(e) => setProfileEmail(e.target.value)} 
+                  required
+                  className="w-full bg-transparent border border-border rounded-sm px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none transition-colors" 
+                />
               </div>
-              <div>
-                <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">Role</label>
-                <span className="inline-block text-[10px] font-heading uppercase tracking-widest px-3 py-1 rounded-sm gold-gradient text-primary-foreground">
-                  {user?.role}
+              <div className="pb-4">
+                <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">System Role</label>
+                <span className="inline-block text-[10px] font-heading uppercase tracking-widest px-3 py-1 rounded-sm bg-secondary text-muted-foreground border border-border">
+                  {user?.role || "Staff"}
                 </span>
+                <p className="text-[10px] text-muted-foreground mt-2 italic">Roles cannot be modified directly from this dashboard.</p>
               </div>
-            </div>
+              
+              <div className="mt-auto pt-2">
+                <button type="submit" disabled={isProfileUpdating || !user} className="glow-button px-6 py-3 text-xs font-heading uppercase tracking-widest text-primary-foreground rounded-sm w-full flex justify-center items-center gap-2 bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 text-black font-bold">
+                  {isProfileUpdating ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <Save className="w-4 h-4" />}
+                  Save Profile Changes
+                </button>
+              </div>
+            </form>
           </div>
 
           {/* Change Password */}
@@ -71,10 +171,49 @@ const AdminSettings = () => {
                 <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">Confirm</label>
                 <input type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} required className="w-full bg-transparent border border-border rounded-sm px-3 py-2 text-sm focus:border-primary focus:outline-none" />
               </div>
-              <button type="submit" className="glow-button gold-gradient px-6 py-3 text-xs font-heading uppercase tracking-widest text-primary-foreground rounded-sm w-full">
+              <button type="submit" disabled={isPwUpdating} className="glow-button border border-border px-6 py-3 text-xs font-heading uppercase tracking-widest hover:border-primary hover:text-primary transition-colors rounded-sm w-full flex justify-center items-center gap-2 mt-4 disabled:opacity-50">
+                {isPwUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 Update Password
               </button>
             </form>
+          </div>
+
+          {/* Currency Configuration */}
+          <div className="glass-card p-6 lg:col-span-2">
+            <div className="flex items-center gap-3 mb-6">
+              <DollarSign className="w-5 h-5 text-primary" />
+              <h2 className="font-heading uppercase tracking-widest text-sm">Currency Configuration</h2>
+            </div>
+            {isFetchingRate ? (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading configuration...
+              </div>
+            ) : (
+              <form onSubmit={handleRateUpdate} className="space-y-4 max-w-sm">
+                <div>
+                  <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">Base Currency</label>
+                  <input value="INR (₹)" disabled className="w-full bg-secondary/50 border border-border rounded-sm px-3 py-2 text-sm text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground mt-1">All products in the database default to INR.</p>
+                </div>
+                <div>
+                  <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">USD Conversion Rate ($1 USD = ? INR)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    min="1"
+                    value={usdRate} 
+                    onChange={(e) => setUsdRate(Number(e.target.value))} 
+                    required 
+                    className="w-full bg-transparent border border-border rounded-sm px-3 py-2 text-sm focus:border-primary focus:outline-none" 
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">Example: A rate of 83 means ₹1000 becomes ${(1000/83).toFixed(2)} USD.</p>
+                </div>
+                <button type="submit" disabled={isRateLoading} className="glow-button gold-gradient px-6 py-3 text-xs font-heading uppercase tracking-widest text-primary-foreground rounded-sm w-full flex justify-center items-center gap-2">
+                  {isRateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Update Exchange Rate
+                </button>
+              </form>
+            )}
           </div>
 
           <div className="glass-card p-6 lg:col-span-2">

@@ -4,10 +4,11 @@ import { Trash2, Minus, Plus, ShoppingBag, MessageCircle, ArrowLeft } from "luci
 import Layout from "@/components/layout/Layout";
 import { useCart } from "@/context/CartContext";
 import { buildWhatsAppUrl } from "@/lib/contact";
-import { formatPrice } from "@/lib/formatPrice";
+import { useCurrency } from "@/context/CurrencyContext";
 
 const Cart = () => {
   const { items, removeFromCart, updateQuantity, getTotal, clearCart } = useCart();
+  const { formatPrice } = useCurrency();
   const totalPrice = getTotal();
 
   const whatsappMsg = `Hello BLATHEIL, I want to order:\n${items

@@ -1,28 +1,14 @@
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Star, ChevronRight } from "lucide-react";
+import { ArrowRight, Star, ChevronRight, Loader2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import ProductCard from "@/components/shop/ProductCard";
 import { HeroSection } from "@/components/ui/feature-carousel";
-import heroBg from "@/assets/hero-bg.jpg";
+import heroBgPattern from "@/assets/hero-bg.jpg"; // Default fallback
 import { useEffect, useState } from "react";
 import { CONTACT_INSTAGRAM_HANDLE, CONTACT_INSTAGRAM_URL } from "@/lib/contact";
 import { Product } from "@/types/product";
 import { fetchProducts } from "@/lib/products";
-
-import hoodieBlack from "@/assets/products/hoodie-black.jpg";
-import cargoBlack from "@/assets/products/cargo-black.jpg";
-import teeBlack from "@/assets/products/tee-black.jpg";
-import bomberBlack from "@/assets/products/bomber-black.jpg";
-import capGold from "@/assets/products/cap-gold.jpg";
-
-const lookbookImages = [
-  { src: hoodieBlack, alt: "Dominion Oversized Hoodie" },
-  { src: bomberBlack, alt: "Sovereign Bomber Jacket" },
-  { src: teeBlack, alt: "Legacy Graphic Tee" },
-  { src: cargoBlack, alt: "Tactical Cargo Pants" },
-  { src: capGold, alt: "Crown Snapback" },
-];
 
 const MarqueeText = () => (
   <div className="overflow-hidden py-6 border-y border-border bg-card/50">
@@ -36,23 +22,33 @@ const MarqueeText = () => (
   </div>
 );
 
-const CountdownTimer = () => {
-  const [time, setTime] = useState({ days: 3, hours: 14, mins: 27, secs: 45 });
+const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
+  const [time, setTime] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
 
   useEffect(() => {
+    if (!targetDate) return;
+    const target = new Date(targetDate).getTime();
+
     const timer = setInterval(() => {
-      setTime((prev) => {
-        let { days, hours, mins, secs } = prev;
-        secs--;
-        if (secs < 0) { secs = 59; mins--; }
-        if (mins < 0) { mins = 59; hours--; }
-        if (hours < 0) { hours = 23; days--; }
-        if (days < 0) return { days: 0, hours: 0, mins: 0, secs: 0 };
-        return { days, hours, mins, secs };
-      });
+      const now = new Date().getTime();
+      const distance = target - now;
+
+      if (distance < 0) {
+        clearInterval(timer);
+        setTime({ days: 0, hours: 0, mins: 0, secs: 0 });
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((distance % (1000 * 60)) / 1000);
+
+      setTime({ days, hours, mins, secs });
     }, 1000);
+
     return () => clearInterval(timer);
-  }, []);
+  }, [targetDate]);
 
   const blocks = [
     { label: "Days", value: time.days },
@@ -79,11 +75,25 @@ const testimonials = [
   { name: "Deon W.", text: "The Sovereign Bomber is my go-to. Every time I wear it, heads turn.", rating: 5 },
 ];
 
-const Index = () => {
+interface IndexProps {
+  cmsDraft?: any;
+  isPreviewMode?: boolean;
+}
+
+const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, 150]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
   const [products, setProducts] = useState<Product[]>([]);
+  
+  const [cmsData, setCmsData] = useState<any>(cmsDraft || null);
+  const [loadingCms, setLoadingCms] = useState(!cmsDraft);
+
+  useEffect(() => {
+    if (isPreviewMode && cmsDraft) {
+      setCmsData(cmsDraft);
+    }
+  }, [cmsDraft, isPreviewMode]);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -94,148 +104,212 @@ const Index = () => {
         console.error("Failed to load products:", error);
       }
     };
-
     loadProducts();
-  }, []);
+
+    if (!isPreviewMode) {
+      const fetchCMS = async () => {
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+          const res = await fetch(`${API_URL}/admin/website-content`);
+          const data = await res.json();
+          setCmsData(data);
+        } catch (error) {
+          console.error("Failed to load CMS data", error);
+        } finally {
+          setLoadingCms(false);
+        }
+      };
+      fetchCMS();
+    }
+  }, [isPreviewMode]);
 
   const newDrops = products.slice(0, 6);
   const bestSellers = products.filter((p) => p.isFeatured).slice(0, 6);
 
-  return (
-    <Layout>
-      {/* Hero */}
-      <section className="relative h-screen overflow-hidden">
-        <motion.div style={{ y: heroY }} className="absolute inset-0">
-          <img src={heroBg} alt="BLATHEIL Hero" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
-        </motion.div>
-        <motion.div
-          style={{ opacity: heroOpacity }}
-          className="relative z-10 container h-full flex flex-col items-center justify-center text-center"
-        >
-          <motion.img
-            src="/logo.png"
-            alt="BLATHEIL"
-            className="h-16 md:h-24 mb-6"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8 }}
-          />
-          <motion.p
-            className="text-sm md:text-base uppercase tracking-[0.4em] text-primary font-heading mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-          >
-            Born to Lead Style
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-          >
-            <Link
-              to="/shop"
-              className="inline-flex items-center gap-3 glow-button gold-gradient px-8 py-4 text-sm font-heading uppercase tracking-widest text-primary-foreground rounded-sm hover:gap-5 transition-all duration-300"
-            >
-              Shop the Drop
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </motion.div>
-        </motion.div>
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 2 }}
-            className="w-6 h-10 border-2 border-foreground/30 rounded-full flex items-start justify-center pt-2"
-          >
-            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-          </motion.div>
+  if (loadingCms) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
         </div>
-      </section>
+      </Layout>
+    );
+  }
 
-      <MarqueeText />
+  // Fallbacks just in case
+  const heroTitle = cmsData?.heroSection?.title || "Born to Lead Style";
+  const heroSubtitle = cmsData?.heroSection?.subtitle || "";
+  const heroButton = cmsData?.heroSection?.buttonText || "Shop the Drop";
+  const heroLink = cmsData?.heroSection?.buttonLink || "/shop";
+  const heroBg = cmsData?.heroSection?.desktopImage || heroBgPattern;
+  
+  const collections = cmsData?.collectionsSection?.sort((a: any, b: any) => a.displayOrder - b.displayOrder) || [];
+  const lookbookImages = collections.map((c: any) => ({ src: c.image || "/placeholder.svg", alt: c.title }));
+
+  const LayoutWrapper = isPreviewMode ? ({ children }: any) => <div className="min-h-screen bg-background">{children}</div> : Layout;
+
+  return (
+    <LayoutWrapper>
+      {/* Hero */}
+      {cmsData?.heroSection?.isActive !== false && (
+        <section className="relative h-screen overflow-hidden">
+          <motion.div style={{ y: heroY }} className="absolute inset-0">
+            <img src={heroBg} alt="BLATHEIL Hero" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
+          </motion.div>
+          <motion.div
+            style={{ opacity: heroOpacity }}
+            className="relative z-10 container h-full flex flex-col items-center justify-center text-center px-4"
+          >
+            <motion.img
+              src="/logo.png"
+              alt="BLATHEIL"
+              className="h-16 md:h-24 mb-6"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8 }}
+            />
+            {heroTitle && (
+              <motion.p
+                className="text-sm md:text-xl uppercase tracking-[0.4em] text-primary font-heading mb-4 leading-relaxed"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+              >
+                {heroTitle}
+              </motion.p>
+            )}
+            {heroSubtitle && (
+              <motion.p
+                className="text-sm md:text-base text-muted-foreground max-w-lg mx-auto mb-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+              >
+                {heroSubtitle}
+              </motion.p>
+            )}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+            >
+              <Link
+                to={heroLink}
+                className="inline-flex items-center gap-3 glow-button gold-gradient px-8 py-4 text-sm font-heading uppercase tracking-widest text-primary-foreground rounded-sm hover:gap-5 transition-all duration-300"
+              >
+                {heroButton}
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+          </motion.div>
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="w-6 h-10 border-2 border-foreground/30 rounded-full flex items-start justify-center pt-2"
+            >
+              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+            </motion.div>
+          </div>
+        </section>
+      )}
+
+      {cmsData?.heroSection?.isActive !== false && <MarqueeText />}
 
       {/* Lookbook Carousel */}
-      <HeroSection
-        title={
-          <>
-            The <span className="gold-text">Collection</span>
-          </>
-        }
-        subtitle="Curated pieces for the bold. Explore our latest lookbook — premium streetwear designed for leaders."
-        images={lookbookImages}
-        className="border-b border-border"
-      />
+      {lookbookImages.length > 0 && (
+        <HeroSection
+          title={
+            <>
+              The <span className="gold-text">Collection</span>
+            </>
+          }
+          subtitle="Curated pieces for the bold. Explore our latest lookbook — premium streetwear designed for leaders."
+          images={lookbookImages}
+          className="border-b border-border"
+        />
+      )}
 
       {/* New Drops */}
-      <section className="container py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex items-end justify-between mb-12"
-        >
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Latest</p>
-            <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">New Drops</h2>
+      {newDrops.length > 0 && (
+        <section className="container py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex items-end justify-between mb-12"
+          >
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Latest</p>
+              <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">New Drops</h2>
+            </div>
+            <Link to="/shop" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-heading uppercase tracking-wider">
+              View All <ChevronRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            {newDrops.map((p, i) => (
+              <ProductCard key={p._id} product={p} index={i} />
+            ))}
           </div>
-          <Link to="/shop" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-heading uppercase tracking-wider">
-            View All <ChevronRight className="w-4 h-4" />
-          </Link>
-        </motion.div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-          {newDrops.map((p, i) => (
-            <ProductCard key={p._id} product={p} index={i} />
-          ))}
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Drop Culture Countdown */}
-      <section className="container py-20">
-        <div className="glass-card p-8 md:p-16 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-          <div className="relative z-10">
-            <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Drop Culture</p>
-            <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase mb-3">Next Drop Incoming</h2>
-            <p className="text-muted-foreground text-sm mb-8 max-w-md mx-auto">
-              Limited pieces. Once they're gone, they're gone. Set your alarms.
-            </p>
-            <div className="flex justify-center mb-8">
-              <CountdownTimer />
+      {cmsData?.nextDropSection?.isVisible !== false && (
+        <section className="container py-20">
+          <div className="glass-card p-8 md:p-16 text-center relative overflow-hidden">
+            {cmsData?.nextDropSection?.image && (
+                <img src={cmsData.nextDropSection.image} className="absolute inset-0 w-full h-full object-cover opacity-20" alt="Drop Background" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent/50" />
+            <div className="relative z-10">
+              <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Drop Culture</p>
+              <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase mb-3">{cmsData?.nextDropSection?.title || "Next Drop Incoming"}</h2>
+              <p className="text-muted-foreground text-sm mb-8 max-w-md mx-auto">
+                {cmsData?.nextDropSection?.description || "Limited pieces. Once they're gone, they're gone. Set your alarms."}
+              </p>
+              <div className="flex justify-center mb-8">
+                {cmsData?.nextDropSection?.countdownDate && (
+                  <CountdownTimer targetDate={cmsData.nextDropSection.countdownDate} />
+                )}
+              </div>
+              <Link
+                to="/shop"
+                className="inline-flex items-center gap-2 border border-primary px-6 py-3 text-sm font-heading uppercase tracking-widest text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 rounded-sm bg-background/50 backdrop-blur-md"
+              >
+                Get Notified
+              </Link>
             </div>
-            <Link
-              to="/shop"
-              className="inline-flex items-center gap-2 border border-primary px-6 py-3 text-sm font-heading uppercase tracking-widest text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 rounded-sm"
-            >
-              Get Notified
-            </Link>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Best Sellers */}
-      <section className="container py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex items-end justify-between mb-12"
-        >
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Most Wanted</p>
-            <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">Best Sellers</h2>
+      {bestSellers.length > 0 && (
+        <section className="container py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex items-end justify-between mb-12"
+          >
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Most Wanted</p>
+              <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">Best Sellers</h2>
+            </div>
+            <Link to="/shop" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-heading uppercase tracking-wider">
+              View All <ChevronRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            {bestSellers.map((p, i) => (
+              <ProductCard key={p._id} product={p} index={i} />
+            ))}
           </div>
-          <Link to="/shop" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-heading uppercase tracking-wider">
-            View All <ChevronRight className="w-4 h-4" />
-          </Link>
-        </motion.div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-          {bestSellers.map((p, i) => (
-            <ProductCard key={p._id} product={p} index={i} />
-          ))}
-        </div>
-      </section>
+        </section>
+      )}
 
       <MarqueeText />
 
@@ -305,7 +379,7 @@ const Index = () => {
           ))}
         </div>
       </section>
-    </Layout>
+    </LayoutWrapper>
   );
 };
 

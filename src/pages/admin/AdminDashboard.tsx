@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Package, ShoppingCart, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useAuth } from "@/context/AuthContext";
-import { formatPrice } from "@/lib/formatPrice";
+import { useCurrency } from "@/context/CurrencyContext";
 
 interface Order {
   _id: string;
@@ -30,6 +30,7 @@ const statCard = (icon: React.ReactNode, label: string, value: string | number, 
 
 const AdminDashboard = () => {
   const { user, token } = useAuth();
+  const { formatPrice } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);

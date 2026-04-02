@@ -16,6 +16,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
+  updateProfile: (name: string, email: string) => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
@@ -146,6 +147,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateProfile = async (name: string, email: string) => {
+    if (!token) throw new Error("Not authenticated");
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/users/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name, email }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Profile update failed");
+      }
+
+      await fetchUser(token);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -154,6 +179,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     changePassword,
+    updateProfile,
     isAuthenticated: !!user && !!token,
     isAdmin: user?.role === "admin",
   };

@@ -4,13 +4,14 @@ import { ArrowLeft, Heart, ShoppingBag, Trash2 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCart } from "@/context/CartContext";
-import { formatPrice } from "@/lib/formatPrice";
+import { useCurrency } from "@/context/CurrencyContext";
 import { toast } from "sonner";
 
 const Wishlist = () => {
   const navigate = useNavigate();
   const { items, loading, removeFromWishlist, pendingProductIds } = useWishlist();
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
 
   const handleMoveToCart = async (
     productId: string,

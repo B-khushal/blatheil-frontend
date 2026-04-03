@@ -7,6 +7,7 @@ import { WishlistProvider } from "@/context/WishlistContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { AdminAuthProvider } from "@/context/AdminAuthContext";
 import { CurrencyProvider } from "@/context/CurrencyContext";
+import { OfferProvider } from "@/context/OfferContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Storefront pages
@@ -34,6 +35,8 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSettings from "./pages/admin/AdminSettings";
 import WebsiteEditor from "./pages/admin/WebsiteEditor";
+import AdminOffers from "./pages/admin/AdminOffers";
+import OfferPopup from "./components/OfferPopup";
 
 const queryClient = new QueryClient();
 
@@ -43,10 +46,12 @@ const App = () => (
       <AuthProvider>
         <WishlistProvider>
           <CartProvider>
+            <OfferProvider>
             <AdminAuthProvider>
               <CurrencyProvider>
                 <Sonner />
                 <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                  <OfferPopup />
                   <Routes>
                 {/* Auth */}
                 <Route path="/login" element={<Login />} />
@@ -75,12 +80,14 @@ const App = () => (
                 <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
                 <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
                 <Route path="/admin/website-editor" element={<ProtectedRoute requiredRole="admin"><WebsiteEditor /></ProtectedRoute>} />
+                <Route path="/admin/offers" element={<ProtectedRoute requiredRole="admin"><AdminOffers /></ProtectedRoute>} />
 
                 <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>
               </CurrencyProvider>
             </AdminAuthProvider>
+            </OfferProvider>
           </CartProvider>
         </WishlistProvider>
       </AuthProvider>

@@ -39,7 +39,7 @@ export const AdminPackageSlip = forwardRef<HTMLDivElement, AdminPackageSlipProps
         <p><span className="font-bold uppercase">Date:</span> {new Date(order.createdAt).toLocaleDateString()}</p>
         <p><span className="font-bold uppercase">Total:</span> {formatter(order.totalPrice || 0)}</p>
         <p className="mt-1 font-bold">
-          {order.paymentMethod === "COD" ? "[ PAY ON DELIVERY ]" : "[ PREPAID ]"}
+          [ PREPAID ]
         </p>
       </div>
 

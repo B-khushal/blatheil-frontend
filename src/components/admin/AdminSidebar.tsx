@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Monitor } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Monitor, Gift } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
@@ -11,6 +11,7 @@ const adminLinks = [
   { label: "Products", path: "/admin/products", icon: Package },
   { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
   { label: "Users", path: "/admin/users", icon: Users, adminOnly: true },
+  { label: "Offers", path: "/admin/offers", icon: Gift, adminOnly: true },
   { label: "Settings", path: "/admin/settings", icon: Settings },
 ];
 

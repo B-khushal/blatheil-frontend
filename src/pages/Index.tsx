@@ -1,20 +1,34 @@
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Star, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronRight, Loader2, Star } from "lucide-react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import ProductCard from "@/components/shop/ProductCard";
 import { HeroSection } from "@/components/ui/feature-carousel";
-import heroBgPattern from "@/assets/hero-bg.jpg"; // Default fallback
-import { useEffect, useState } from "react";
+import heroBgPattern from "@/assets/hero-bg.jpg";
 import { CONTACT_INSTAGRAM_HANDLE, CONTACT_INSTAGRAM_URL } from "@/lib/contact";
-import { Product } from "@/types/product";
 import { fetchProducts } from "@/lib/products";
+import type { Product } from "@/types/product";
+
+type HomeReview = {
+  _id: string;
+  rating: number;
+  title?: string;
+  comment: string;
+  customer_name: string;
+  is_verified_purchase?: boolean;
+  is_featured?: boolean;
+  is_pinned?: boolean;
+};
 
 const MarqueeText = () => (
   <div className="overflow-hidden py-6 border-y border-border bg-card/50">
     <div className="marquee whitespace-nowrap flex">
       {Array.from({ length: 8 }).map((_, i) => (
-        <span key={i} className="mx-8 text-2xl md:text-4xl font-heading uppercase tracking-[0.3em] text-muted-foreground/30">
+        <span
+          key={i}
+          className="mx-8 text-2xl md:text-4xl font-heading uppercase tracking-[0.3em] text-muted-foreground/30"
+        >
           Born to Lead Style ★
         </span>
       ))}
@@ -27,10 +41,10 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
 
   useEffect(() => {
     if (!targetDate) return;
-    const target = new Date(targetDate).getTime();
 
+    const target = new Date(targetDate).getTime();
     const timer = setInterval(() => {
-      const now = new Date().getTime();
+      const now = Date.now();
       const distance = target - now;
 
       if (distance < 0) {
@@ -50,30 +64,24 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
     return () => clearInterval(timer);
   }, [targetDate]);
 
-  const blocks = [
-    { label: "Days", value: time.days },
-    { label: "Hours", value: time.hours },
-    { label: "Mins", value: time.mins },
-    { label: "Secs", value: time.secs },
-  ];
-
   return (
     <div className="flex gap-3">
-      {blocks.map((b) => (
-        <div key={b.label} className="glass-card px-4 py-3 text-center min-w-[60px]">
-          <div className="text-xl md:text-2xl font-heading text-primary">{String(b.value).padStart(2, "0")}</div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{b.label}</div>
+      {[
+        { label: "Days", value: time.days },
+        { label: "Hours", value: time.hours },
+        { label: "Mins", value: time.mins },
+        { label: "Secs", value: time.secs },
+      ].map((block) => (
+        <div key={block.label} className="glass-card px-4 py-3 text-center min-w-[60px]">
+          <div className="text-xl md:text-2xl font-heading text-primary">
+            {String(block.value).padStart(2, "0")}
+          </div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{block.label}</div>
         </div>
       ))}
     </div>
   );
 };
-
-const testimonials = [
-  { name: "Marcus J.", text: "BLATHEIL isn't just clothes — it's an identity. The quality is unmatched.", rating: 5 },
-  { name: "Zara K.", text: "Finally a brand that gets it. Premium feel, bold designs. I'm hooked.", rating: 5 },
-  { name: "Deon W.", text: "The Sovereign Bomber is my go-to. Every time I wear it, heads turn.", rating: 5 },
-];
 
 interface IndexProps {
   cmsDraft?: any;
@@ -84,10 +92,12 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
   const { scrollY } = useScroll();
   const heroY = useTransform(scrollY, [0, 500], [0, 150]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+
   const [products, setProducts] = useState<Product[]>([]);
-  
+  const [reviews, setReviews] = useState<HomeReview[]>([]);
   const [cmsData, setCmsData] = useState<any>(cmsDraft || null);
   const [loadingCms, setLoadingCms] = useState(!cmsDraft);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   useEffect(() => {
     if (isPreviewMode && cmsDraft) {
@@ -96,6 +106,8 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
   }, [cmsDraft, isPreviewMode]);
 
   useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+
     const loadProducts = async () => {
       try {
         const data = await fetchProducts({ limit: 30 });
@@ -104,27 +116,58 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
         console.error("Failed to load products:", error);
       }
     };
-    loadProducts();
 
-    if (!isPreviewMode) {
-      const fetchCMS = async () => {
-        try {
-          const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
-          const res = await fetch(`${API_URL}/admin/website-content`);
-          const data = await res.json();
-          setCmsData(data);
-        } catch (error) {
-          console.error("Failed to load CMS data", error);
-        } finally {
-          setLoadingCms(false);
+    const loadCms = async () => {
+      if (isPreviewMode) {
+        setLoadingCms(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/admin/website-content`);
+        const data = await res.json();
+        setCmsData(data);
+      } catch (error) {
+        console.error("Failed to load CMS data", error);
+      } finally {
+        setLoadingCms(false);
+      }
+    };
+
+    const loadFeaturedReviews = async () => {
+      if (isPreviewMode) {
+        setLoadingReviews(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/reviews/admin/all?limit=12&sortBy=latest`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          },
+        });
+
+        if (!res.ok) {
+          setReviews([]);
+          return;
         }
-      };
-      fetchCMS();
-    }
-  }, [isPreviewMode]);
 
-  const newDrops = products.slice(0, 6);
-  const bestSellers = products.filter((p) => p.isFeatured).slice(0, 6);
+        const data = await res.json();
+        const list: HomeReview[] = Array.isArray(data?.reviews) ? data.reviews : [];
+        const featured = list.filter((r) => r.is_featured || r.is_pinned).slice(0, 3);
+        setReviews(featured);
+      } catch (error) {
+        console.error("Failed to load featured reviews:", error);
+        setReviews([]);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    loadProducts();
+    loadCms();
+    loadFeaturedReviews();
+  }, [isPreviewMode]);
 
   if (loadingCms) {
     return (
@@ -136,27 +179,31 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
     );
   }
 
-  // Fallbacks just in case
   const heroTitle = cmsData?.heroSection?.title || "Born to Lead Style";
   const heroSubtitle = cmsData?.heroSection?.subtitle || "";
   const heroButton = cmsData?.heroSection?.buttonText || "Shop the Drop";
   const heroLink = cmsData?.heroSection?.buttonLink || "/shop";
   const heroBg = cmsData?.heroSection?.desktopImage || heroBgPattern;
-  
-  const collections = cmsData?.collectionsSection?.sort((a: any, b: any) => a.displayOrder - b.displayOrder) || [];
+  const collections =
+    cmsData?.collectionsSection?.sort((a: any, b: any) => a.displayOrder - b.displayOrder) || [];
   const lookbookImages = collections.map((c: any) => ({ src: c.image || "/placeholder.svg", alt: c.title }));
 
-  const LayoutWrapper = isPreviewMode ? ({ children }: any) => <div className="min-h-screen bg-background">{children}</div> : Layout;
+  const newDrops = products.slice(0, 6);
+  const bestSellers = products.filter((p) => p.isFeatured).slice(0, 6);
+
+  const LayoutWrapper = isPreviewMode
+    ? ({ children }: { children: React.ReactNode }) => <div className="min-h-screen bg-background">{children}</div>
+    : Layout;
 
   return (
     <LayoutWrapper>
-      {/* Hero */}
       {cmsData?.heroSection?.isActive !== false && (
         <section className="relative h-screen overflow-hidden">
           <motion.div style={{ y: heroY }} className="absolute inset-0">
             <img src={heroBg} alt="BLATHEIL Hero" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
           </motion.div>
+
           <motion.div
             style={{ opacity: heroOpacity }}
             className="relative z-10 container h-full flex flex-col items-center justify-center text-center px-4"
@@ -169,6 +216,7 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8 }}
             />
+
             {heroTitle && (
               <motion.p
                 className="text-sm md:text-xl uppercase tracking-[0.4em] text-primary font-heading mb-4 leading-relaxed"
@@ -179,6 +227,7 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
                 {heroTitle}
               </motion.p>
             )}
+
             {heroSubtitle && (
               <motion.p
                 className="text-sm md:text-base text-muted-foreground max-w-lg mx-auto mb-8"
@@ -189,6 +238,7 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
                 {heroSubtitle}
               </motion.p>
             )}
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -203,21 +253,11 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
               </Link>
             </motion.div>
           </motion.div>
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              className="w-6 h-10 border-2 border-foreground/30 rounded-full flex items-start justify-center pt-2"
-            >
-              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-            </motion.div>
-          </div>
         </section>
       )}
 
       {cmsData?.heroSection?.isActive !== false && <MarqueeText />}
 
-      {/* Lookbook Carousel */}
       {lookbookImages.length > 0 && (
         <HeroSection
           title={
@@ -225,13 +265,12 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
               The <span className="gold-text">Collection</span>
             </>
           }
-          subtitle="Curated pieces for the bold. Explore our latest lookbook — premium streetwear designed for leaders."
+          subtitle="Curated pieces for the bold. Explore our latest lookbook."
           images={lookbookImages}
           className="border-b border-border"
         />
       )}
 
-      {/* New Drops */}
       {newDrops.length > 0 && (
         <section className="container py-20">
           <motion.div
@@ -244,7 +283,10 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Latest</p>
               <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">New Drops</h2>
             </div>
-            <Link to="/shop" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-heading uppercase tracking-wider">
+            <Link
+              to="/shop"
+              className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-heading uppercase tracking-wider"
+            >
               View All <ChevronRight className="w-4 h-4" />
             </Link>
           </motion.div>
@@ -256,19 +298,25 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
         </section>
       )}
 
-      {/* Drop Culture Countdown */}
       {cmsData?.nextDropSection?.isVisible !== false && (
         <section className="container py-20">
           <div className="glass-card p-8 md:p-16 text-center relative overflow-hidden">
             {cmsData?.nextDropSection?.image && (
-                <img src={cmsData.nextDropSection.image} className="absolute inset-0 w-full h-full object-cover opacity-20" alt="Drop Background" />
+              <img
+                src={cmsData.nextDropSection.image}
+                className="absolute inset-0 w-full h-full object-cover opacity-20"
+                alt="Drop Background"
+              />
             )}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent/50" />
             <div className="relative z-10">
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Drop Culture</p>
-              <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase mb-3">{cmsData?.nextDropSection?.title || "Next Drop Incoming"}</h2>
+              <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase mb-3">
+                {cmsData?.nextDropSection?.title || "Next Drop Incoming"}
+              </h2>
               <p className="text-muted-foreground text-sm mb-8 max-w-md mx-auto">
-                {cmsData?.nextDropSection?.description || "Limited pieces. Once they're gone, they're gone. Set your alarms."}
+                {cmsData?.nextDropSection?.description ||
+                  "Limited pieces. Once they are gone, they are gone. Set your alarms."}
               </p>
               <div className="flex justify-center mb-8">
                 {cmsData?.nextDropSection?.countdownDate && (
@@ -286,7 +334,6 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
         </section>
       )}
 
-      {/* Best Sellers */}
       {bestSellers.length > 0 && (
         <section className="container py-20">
           <motion.div
@@ -299,7 +346,10 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
               <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Most Wanted</p>
               <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">Best Sellers</h2>
             </div>
-            <Link to="/shop" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-heading uppercase tracking-wider">
+            <Link
+              to="/shop"
+              className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors font-heading uppercase tracking-wider"
+            >
               View All <ChevronRight className="w-4 h-4" />
             </Link>
           </motion.div>
@@ -313,40 +363,49 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
 
       <MarqueeText />
 
-      {/* Testimonials */}
-      <section className="container py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">The Community</p>
-          <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">What They Say</h2>
-        </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className="glass-card p-6"
-            >
-              <div className="flex gap-1 mb-4">
-                {Array.from({ length: t.rating }).map((_, j) => (
-                  <Star key={j} className="w-4 h-4 fill-primary text-primary" />
-                ))}
-              </div>
-              <p className="text-sm text-foreground/80 mb-4 leading-relaxed">"{t.text}"</p>
-              <p className="text-xs font-heading uppercase tracking-widest text-primary">{t.name}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+      {!loadingReviews && reviews.length > 0 && (
+        <section className="container py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">The Community</p>
+            <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">What They Say</h2>
+          </motion.div>
 
-      {/* Instagram Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {reviews.map((r, i) => (
+              <motion.div
+                key={r._id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                className="glass-card p-6"
+              >
+                <div className="flex gap-1 mb-4">
+                  {Array.from({ length: r.rating }).map((_, j) => (
+                    <Star key={j} className="w-4 h-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                {r.title && <p className="text-xs font-heading uppercase tracking-wider text-primary mb-2">{r.title}</p>}
+                <p className="text-sm text-foreground/80 mb-4 leading-relaxed">"{r.comment}"</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-heading uppercase tracking-widest text-primary">{r.customer_name}</p>
+                  {r.is_verified_purchase && (
+                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded uppercase tracking-wider font-heading">
+                      Verified
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="container py-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -355,24 +414,25 @@ const Index = ({ cmsDraft, isPreviewMode = false }: IndexProps) => {
           className="text-center mb-12"
         >
           <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">{CONTACT_INSTAGRAM_HANDLE}</p>
-          <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">Follow the Movement</h2>
+          <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase">Follow the Drops</h2>
         </motion.div>
+
         <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
           {products.slice(0, 6).map((p, i) => (
             <motion.a
-              key={i}
+              key={p._id}
               href={CONTACT_INSTAGRAM_URL}
               target="_blank"
               rel="noreferrer"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.08 }}
               className="aspect-square overflow-hidden rounded-sm group"
             >
               <img
                 src={p.images?.[0] || "/placeholder.svg"}
-                alt=""
+                alt={p.name}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
             </motion.a>

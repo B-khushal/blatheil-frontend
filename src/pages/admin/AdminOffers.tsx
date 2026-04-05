@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Layout from "@/components/layout/Layout";
+import AdminLayout from "@/components/admin/AdminLayout";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,7 +195,7 @@ export default function AdminOffers() {
   };
 
   return (
-    <Layout>
+    <AdminLayout>
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -545,6 +545,6 @@ export default function AdminOffers() {
           </Card>
         )}
       </div>
-    </Layout>
+    </AdminLayout>
   );
 }

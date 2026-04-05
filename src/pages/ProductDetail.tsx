@@ -1,24 +1,30 @@
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ShoppingBag, MessageCircle, ArrowLeft, Minus, Plus, Heart } from "lucide-react";
+import { ShoppingBag, MessageCircle, ArrowLeft, Minus, Plus, Heart, Share2, Copy, Check, Send } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { buildWhatsAppUrl } from "@/lib/contact";
-import { fetchProductById } from "@/lib/products";
+import { fetchProductById, fetchProducts } from "@/lib/products";
 import { Product } from "@/types/product";
 import { useCurrency } from "@/context/CurrencyContext";
 import { ImageCarousel } from "@/components/ui/ImageCarousel";
+import { ReviewSection } from "@/components/ReviewSection";
+import { ReviewForm } from "@/components/ReviewForm";
+import ProductCard from "@/components/shop/ProductCard";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [product, setProduct] = useState<Product | null>(null);
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
@@ -39,8 +45,21 @@ const ProductDetail = () => {
         const data = await fetchProductById(id);
         setProduct(data);
         setSelectedSize(data.sizes?.[0] || "");
+        setShowReviewForm(false);
+
+        // Product suggestions: same category first, then featured fallback.
+        const sameCategory = await fetchProducts({ category: data.category, limit: 10 });
+        const filteredSameCategory = sameCategory.filter((p) => p._id !== data._id).slice(0, 4);
+
+        if (filteredSameCategory.length > 0) {
+          setRecommendedProducts(filteredSameCategory);
+        } else {
+          const featured = await fetchProducts({ isFeatured: true, limit: 8 });
+          setRecommendedProducts(featured.filter((p) => p._id !== data._id).slice(0, 4));
+        }
       } catch {
         setProduct(null);
+        setRecommendedProducts([]);
       } finally {
         setLoading(false);
       }
@@ -103,6 +122,47 @@ const ProductDetail = () => {
   };
 
   const whatsappMsg = `Hello BLATHEIL, I want to order ${product.name}. Size: ${selectedSize || "N/A"}. Qty: ${quantity}. Price: ${formatPrice(product.price * quantity)}.`;
+  const productUrl = `${window.location.origin}/product/${product._id}`;
+
+  const handleNativeShare = async () => {
+    const sharePayload = {
+      title: `${product.name} | BLATHEIL`,
+      text: `Check out ${product.name} by BLATHEIL`,
+      url: productUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(sharePayload);
+        return;
+      }
+    } catch {
+      // If native share is canceled or fails, fallback to copy link below.
+    }
+
+    try {
+      await navigator.clipboard.writeText(productUrl);
+      setCopiedLink(true);
+      toast.success("Product link copied to clipboard");
+      setTimeout(() => setCopiedLink(false), 1800);
+    } catch {
+      toast.error("Unable to share right now. Please copy the link manually.");
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(productUrl);
+      setCopiedLink(true);
+      toast.success("Product link copied");
+      setTimeout(() => setCopiedLink(false), 1800);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const encodedUrl = encodeURIComponent(productUrl);
+  const encodedText = encodeURIComponent(`Check out ${product.name} by BLATHEIL`);
 
   return (
     <Layout>
@@ -201,10 +261,103 @@ const ProductDetail = () => {
                 <MessageCircle className="w-4 h-4" />
                 Order via WhatsApp
               </a>
+
+              {/* Professional share section */}
+              <div className="mt-2 border border-border rounded-sm p-4 bg-card/50">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <p className="text-xs font-heading uppercase tracking-[0.25em] text-muted-foreground">Share Product</p>
+                  <button
+                    type="button"
+                    onClick={handleNativeShare}
+                    className="inline-flex items-center gap-2 text-xs font-heading uppercase tracking-wider text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Quick Share
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <a
+                    href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="border border-border px-3 py-2 text-xs font-heading uppercase tracking-wider text-center hover:border-green-500 hover:text-green-500 transition-colors rounded-sm"
+                  >
+                    WhatsApp
+                  </a>
+                  <a
+                    href={`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="border border-border px-3 py-2 text-xs font-heading uppercase tracking-wider text-center hover:border-primary hover:text-primary transition-colors rounded-sm"
+                  >
+                    X / Twitter
+                  </a>
+                  <a
+                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="border border-border px-3 py-2 text-xs font-heading uppercase tracking-wider text-center hover:border-primary hover:text-primary transition-colors rounded-sm"
+                  >
+                    Facebook
+                  </a>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="w-full border border-primary/50 px-4 py-2 text-xs font-heading uppercase tracking-wider text-primary rounded-sm hover:bg-primary hover:text-primary-foreground transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copiedLink ? "Link Copied" : "Copy Product Link"}
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
+
+      {/* Review Section */}
+      {product && (
+        <section className="container pb-20">
+          <ReviewSection
+            productId={product._id}
+            onWriteReview={() => {
+              setShowReviewForm(true);
+              requestAnimationFrame(() => {
+                const el = document.getElementById(`review-form-${product._id}`);
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              });
+            }}
+          />
+        </section>
+      )}
+
+      {/* Review Form */}
+      {product && showReviewForm && (
+        <section className="container pb-20">
+          <ReviewForm productId={product._id} onReviewSubmitted={() => window.location.reload()} />
+        </section>
+      )}
+
+      {/* Recommended Products */}
+      {product && recommendedProducts.length > 0 && (
+        <section className="container pb-24">
+          <div className="border-t border-border pt-12">
+            <div className="mb-8">
+              <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Suggestions</p>
+              <h2 className="text-3xl md:text-4xl font-heading font-bold uppercase">Recommended For You</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {recommendedProducts.map((item, index) => (
+                <ProductCard key={item._id} product={item} index={index} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </Layout>
   );
 };

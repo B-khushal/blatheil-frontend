@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
@@ -46,6 +46,24 @@ const ProductRouteRedirect = () => {
   return <Navigate to={`/product/${id}`} replace />;
 };
 
+const StorefrontEntry = () => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const productFromQuery = searchParams.get("product");
+  const hashMatch = location.hash.match(/^#\/?product\/([^/?#]+)/i);
+  const productFromHash = hashMatch?.[1] || null;
+
+  if (productFromQuery) {
+    return <Navigate to={`/product/${productFromQuery}`} replace />;
+  }
+
+  if (productFromHash) {
+    return <Navigate to={`/product/${productFromHash}`} replace />;
+  }
+
+  return <Index />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -64,7 +82,8 @@ const App = () => (
                 <Route path="/signup" element={<Signup />} />
 
                 {/* Storefront */}
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<StorefrontEntry />} />
+                <Route path="/index.html" element={<StorefrontEntry />} />
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/products/:id" element={<ProductRouteRedirect />} />

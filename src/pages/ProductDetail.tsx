@@ -124,7 +124,10 @@ const ProductDetail = () => {
   const whatsappMsg = `Hello BLATHEIL, I want to order ${product.name}. Size: ${selectedSize || "N/A"}. Qty: ${quantity}. Price: ${formatPrice(product.price * quantity)}.`;
   const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   const productPath = `${basePath}/product/${product._id}`.replace(/\/\/+/, "/");
-  const productUrl = `${window.location.origin}${productPath}`;
+  const canonicalProductUrl = `${window.location.origin}${productPath}`;
+  // Resilient share URL: works even if host redirects unknown paths to /index.html.
+  const shareLandingPath = `${basePath || ""}/index.html`.replace(/\/\/+/, "/");
+  const productUrl = `${window.location.origin}${shareLandingPath}?product=${encodeURIComponent(product._id)}`;
 
   const handleNativeShare = async () => {
     const sharePayload = {

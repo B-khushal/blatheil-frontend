@@ -1,7 +1,7 @@
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ShoppingBag, MessageCircle, ArrowLeft, Minus, Plus, Heart, Share2, Copy, Check, Send } from "lucide-react";
+import { ShoppingBag, MessageCircle, ArrowLeft, Minus, Plus, Heart, Share2, Copy, Check } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -122,7 +122,9 @@ const ProductDetail = () => {
   };
 
   const whatsappMsg = `Hello BLATHEIL, I want to order ${product.name}. Size: ${selectedSize || "N/A"}. Qty: ${quantity}. Price: ${formatPrice(product.price * quantity)}.`;
-  const productUrl = `${window.location.origin}/product/${product._id}`;
+  const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  const productPath = `${basePath}/product/${product._id}`.replace(/\/\/+/, "/");
+  const productUrl = `${window.location.origin}${productPath}`;
 
   const handleNativeShare = async () => {
     const sharePayload = {

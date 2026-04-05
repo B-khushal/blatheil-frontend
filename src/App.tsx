@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/context/CartContext";
@@ -41,6 +41,11 @@ import OfferPopup from "@/components/OfferPopup";
 
 const queryClient = new QueryClient();
 
+const ProductRouteRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={`/product/${id}`} replace />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -51,7 +56,7 @@ const App = () => (
             <AdminAuthProvider>
               <CurrencyProvider>
                 <Sonner />
-                <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <BrowserRouter basename={import.meta.env.BASE_URL} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                   <OfferPopup />
                   <Routes>
                 {/* Auth */}
@@ -62,6 +67,8 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
+                <Route path="/products/:id" element={<ProductRouteRedirect />} />
+                <Route path="/shop/product/:id" element={<ProductRouteRedirect />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
                 <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />

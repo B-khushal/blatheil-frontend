@@ -4,8 +4,11 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "customer" | "admin" | "staff";
+  role: "user" | "admin" | "staff";
   mustChangePassword: boolean;
+  provider?: "local" | "google";
+  profileImage?: string;
+  isVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -14,6 +17,7 @@ interface AuthContextType {
   loading: boolean;
   signup: (name: string, email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   updateProfile: (name: string, email: string) => Promise<void>;
@@ -44,6 +48,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const fetchUser = async (token: string) => {
     try {
       const response = await fetch(`${API_URL}/users/profile`, {
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -70,6 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
       });
@@ -97,6 +103,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
@@ -119,7 +126,53 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const loginWithGoogle = async (credential: string) => {
+    setLoading(true);
+    try {
+      const csrfResponse = await fetch(`${API_URL}/auth/csrf-token`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!csrfResponse.ok) {
+        throw new Error("Unable to initialize Google authentication");
+      }
+
+      const csrfData = await csrfResponse.json();
+      const csrfToken = csrfData?.data?.csrfToken;
+
+      const response = await fetch(`${API_URL}/auth/google`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        body: JSON.stringify({ credential }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Google sign in failed");
+      }
+
+      const data = await response.json();
+      const newToken = data.data.token;
+
+      setToken(newToken);
+      localStorage.setItem("token", newToken);
+      await fetchUser(newToken);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
+    fetch(`${API_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => null);
+
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
@@ -130,6 +183,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const response = await fetch(`${API_URL}/auth/change-password`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -153,6 +207,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await fetch(`${API_URL}/users/profile`, {
         method: "PUT",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -177,6 +232,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loading,
     signup,
     login,
+    loginWithGoogle,
     logout,
     changePassword,
     updateProfile,

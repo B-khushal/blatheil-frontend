@@ -12,7 +12,7 @@ import { useCurrency } from "@/context/CurrencyContext";
 
 interface Order {
   _id: string;
-  status: "pending" | "confirmed" | "shipped" | "delivered";
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
   totalPrice: number;
   createdAt: string;
   userId: { name: string; email: string };
@@ -25,13 +25,14 @@ interface Order {
   shipment_id?: string;
 }
 
-const statusOptions: Order["status"][] = ["pending", "confirmed", "shipped", "delivered"];
+const statusOptions: Order["status"][] = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30",
   confirmed: "bg-blue-400/10 text-blue-400 border-blue-400/30",
   shipped: "bg-purple-400/10 text-purple-400 border-purple-400/30",
   delivered: "bg-green-400/10 text-green-400 border-green-400/30",
+  cancelled: "bg-red-500/10 text-red-400 border-red-500/30",
 };
 
 const shippingStatusColors: Record<string, string> = {

@@ -5,8 +5,8 @@ const About = () => (
   <Layout>
     <section className="container pt-28 md:pt-32 pb-20">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl">
-        <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Our Story</p>
-        <h1 className="text-4xl md:text-6xl font-heading font-bold uppercase mb-8">Born to Lead</h1>
+        <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-2">Brand Story</p>
+        <h1 className="text-4xl md:text-6xl font-heading font-bold uppercase mb-8">Born To Lead</h1>
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mt-16">
@@ -18,10 +18,10 @@ const About = () => (
         >
           <h3 className="text-xl font-heading uppercase tracking-wider text-primary">The Vision</h3>
           <p className="text-muted-foreground leading-relaxed">
-            BLATHEIL was born from a refusal to conform. In a world of fast fashion and fleeting trends, we chose to build something that lasts — a brand rooted in leadership, individuality, and unapologetic self-expression.
+            Blatheil was born from a vision to redefine modern streetwear with a touch of timeless luxury. Rooted in confidence, ambition, and individuality, the brand represents those who lead rather than follow.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            Every piece we create is a statement. Not just of style, but of mindset. We design for the leaders — the ones who set trends, not follow them. The ones who walk into a room and own it.
+            Every design blends bold aesthetics with refined elegance, crafted for a generation that values both style and substance. The iconic "B" symbolizes strength, identity, and legacy.
           </p>
         </motion.div>
 
@@ -34,10 +34,13 @@ const About = () => (
         >
           <h3 className="text-xl font-heading uppercase tracking-wider text-primary">The Mission</h3>
           <p className="text-muted-foreground leading-relaxed">
-            We exist to redefine what streetwear means. Premium materials, bold designs, limited drops — this isn't mass production. This is curated culture. Every collection tells a story of dominance, resilience, and forward motion.
+            Blatheil is not just clothing. It is an attitude, a mindset, and a statement of purpose. Built for creators, dreamers, and leaders, Blatheil inspires you to stand out, own your journey, and express your unique style.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            From the streets to the spotlight, BLATHEIL is the uniform of the next generation of leaders. We don't follow the culture — we create it.
+            As the journey continues, Blatheil evolves with the spirit of those who dare to be different. Each collection tells a story of resilience, passion, and forward-thinking creativity, pushing boundaries beyond ordinary fashion.
+          </p>
+          <p className="text-muted-foreground leading-relaxed">
+            Inspired by urban culture and global influences, the brand brings together comfort, quality, and innovation in every thread. With every step, every outfit, and every statement, Blatheil stands for bold expression and fearless leadership.
           </p>
         </motion.div>
       </div>
@@ -50,10 +53,10 @@ const About = () => (
       >
         <p className="text-xs uppercase tracking-[0.3em] text-primary font-heading mb-4">Our Mantra</p>
         <h2 className="text-3xl md:text-5xl font-heading font-bold uppercase gold-text">
-          Lead. Don't Follow.
+          True Fashion Begins When You Lead.
         </h2>
         <p className="text-muted-foreground mt-4 max-w-lg mx-auto">
-          Every thread, every stitch, every drop — designed for those who dare to stand apart.
+          Blatheil is more than a label. It is a movement that empowers individuals to embrace identity without compromise.
         </p>
       </motion.div>
     </section>

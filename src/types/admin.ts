@@ -36,6 +36,6 @@ export interface Order {
   address: string;
   items: OrderItem[];
   totalPrice: number;
-  status: "pending" | "confirmed" | "shipped" | "delivered";
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
   createdAt: string;
 }

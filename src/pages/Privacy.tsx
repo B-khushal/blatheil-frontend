@@ -1,16 +1,34 @@
-import Layout from "@/components/layout/Layout";
+import PolicyShell from "@/components/policy/PolicyShell";
 
 const Privacy = () => (
-  <Layout>
-    <section className="container py-28">
-      <h1 className="text-3xl md:text-5xl font-heading font-bold uppercase tracking-wide mb-6">Privacy Policy</h1>
-      <p className="text-muted-foreground max-w-3xl leading-relaxed">
-        BLATHEIL respects your privacy. We collect only the information needed to process orders,
-        improve your shopping experience, and provide customer support. We do not sell personal data
-        to third parties. Contact us for any privacy-related request.
-      </p>
-    </section>
-  </Layout>
+  <PolicyShell
+    badge="Policy"
+    title="Privacy Policy"
+    updatedOn="April 13, 2026"
+    lead="Blatheil respects your privacy and protects customer data through responsible collection, secure handling, and transparent communication."
+    sections={[
+      {
+        title: "Data We Collect",
+        body: "We collect only required information such as name, contact details, shipping address, and order records to fulfill purchases and assist customers.",
+      },
+      {
+        title: "Why We Collect It",
+        body: "Information is used to process orders, share shipment updates, provide support, and improve the overall Blatheil experience.",
+      },
+      {
+        title: "Data Sharing",
+        body: "Blatheil does not sell customer data. Limited information may be shared only with trusted payment, logistics, and service partners required to complete your order journey.",
+      },
+      {
+        title: "Branding Note",
+        body: "Branding is how people feel when they see or think about a brand. For Blatheil, this includes luxury streetwear design language, black-and-gold aesthetics, premium tone, and leadership-driven messaging.",
+      },
+      {
+        title: "Your Rights",
+        body: "You may request data correction or deletion by contacting support, subject to legal obligations and essential transaction records.",
+      },
+    ]}
+  />
 );
 
 export default Privacy;

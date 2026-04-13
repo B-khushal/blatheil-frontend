@@ -21,6 +21,9 @@ import Wishlist from "./pages/Wishlist";
 import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import ShippingPolicy from "./pages/ShippingPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
+import CancellationPolicy from "./pages/CancellationPolicy";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -98,6 +101,9 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/terms" element={<Terms />} />
+                <Route path="/shipping-policy" element={<ShippingPolicy />} />
+                <Route path="/refund-policy" element={<RefundPolicy />} />
+                <Route path="/cancellation-policy" element={<CancellationPolicy />} />
 
                 {/* Admin */}
                 <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

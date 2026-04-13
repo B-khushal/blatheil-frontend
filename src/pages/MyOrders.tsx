@@ -17,7 +17,7 @@ interface Order {
   _id: string;
   totalPrice: number;
   createdAt: string;
-  status: "pending" | "confirmed" | "shipped" | "delivered";
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
   shipping_status?: string;
   courier_name?: string;
   awb_code?: string;
@@ -31,6 +31,7 @@ const statusColorMap: Record<string, string> = {
   "in transit": "bg-indigo-400/10 text-indigo-300 border-indigo-400/30",
   "out for delivery": "bg-orange-400/10 text-orange-300 border-orange-400/30",
   delivered: "bg-green-500/10 text-green-500 border-green-500/30",
+  cancelled: "bg-red-500/10 text-red-400 border-red-500/30",
 };
 
 const normalizeStatus = (value?: string) => (value || "Pending").toLowerCase();

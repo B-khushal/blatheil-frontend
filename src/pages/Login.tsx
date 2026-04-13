@@ -2,17 +2,19 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import { BadgePercent, Chrome, Eye, EyeOff, LogIn, ShieldCheck, Truck } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
+import { BadgePercent, Eye, EyeOff, LogIn, ShieldCheck, Truck } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isAuthenticated, isAdmin } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, isAdmin } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const googleClientIdConfigured = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
   const highlights = [
     {
@@ -220,14 +222,50 @@ export default function Login() {
                 <div className="h-px flex-1 bg-border" />
               </div>
 
-              <button
-                type="button"
-                disabled
-                className="flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border/90 bg-background/60 px-4 text-sm font-medium text-foreground/80 transition-all duration-200"
-              >
-                <Chrome className="h-4 w-4 text-primary" />
-                Google (coming soon)
-              </button>
+              {!googleClientIdConfigured && (
+                <div className="mb-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  Google Sign-In is disabled because VITE_GOOGLE_CLIENT_ID is not configured.
+                </div>
+              )}
+
+              {googleClientIdConfigured ? (
+                <div className="google-login-wrapper">
+                  <GoogleLogin
+                    onSuccess={async (credentialResponse) => {
+                      const credential = credentialResponse.credential;
+                      if (!credential) {
+                        setError("Google login did not return a credential.");
+                        return;
+                      }
+
+                      try {
+                        setLoading(true);
+                        setError("");
+                        await loginWithGoogle(credential);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "Google sign in failed");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    onError={() => {
+                      setError("Google sign in failed. Please try again.");
+                    }}
+                    text="continue_with"
+                    shape="pill"
+                    size="large"
+                    theme="filled_black"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border/90 bg-background/60 px-4 text-sm font-medium text-foreground/80"
+                >
+                  Google login unavailable (missing config)
+                </button>
+              )}
 
               <p className="mt-5 text-center text-sm text-muted-foreground">
                 New to Blatheil?{" "}

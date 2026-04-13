@@ -140,7 +140,6 @@ export default function Checkout() {
   /* ── Order success handler (unchanged logic) ── */
   const handleOrderSuccess = async (data: any) => {
     setSuccessMessage("Order placed successfully");
-    await clearCart().catch(() => undefined);
     navigate("/order-success", {
       replace: true,
       state: {
@@ -149,6 +148,7 @@ export default function Checkout() {
         paymentStatus: data?.order?.paymentStatus,
       },
     });
+    clearCart().catch(() => undefined);
   };
 
   /* ── Empty cart state ── */

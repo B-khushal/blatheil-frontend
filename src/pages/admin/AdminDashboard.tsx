@@ -111,45 +111,10 @@ const AdminDashboard = () => {
           <div className="glass-card p-4 mb-6 border-destructive/40 text-destructive text-sm">{error}</div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {statCard(<Package className="w-5 h-5 text-primary" />, "Total Products", products.length)}
+        {/* Minimal Stats: only Total Orders and Total Revenue */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           {statCard(<ShoppingCart className="w-5 h-5 text-primary" />, "Total Orders", orders.length)}
           {statCard(<DollarSign className="w-5 h-5 text-primary" />, "Total Revenue", formatPrice(revenue), true)}
-          {statCard(<TrendingUp className="w-5 h-5 text-primary" />, "Pending Orders", pendingOrders)}
-        </div>
-
-        {/* Recent Orders */}
-        <div className="glass-card p-6">
-          <h2 className="font-heading uppercase tracking-widest text-sm mb-4">Recent Orders</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-2 text-xs font-heading uppercase tracking-widest text-muted-foreground">Order ID</th>
-                  <th className="text-left py-3 px-2 text-xs font-heading uppercase tracking-widest text-muted-foreground">Customer</th>
-                  <th className="text-left py-3 px-2 text-xs font-heading uppercase tracking-widest text-muted-foreground">Total</th>
-                  <th className="text-left py-3 px-2 text-xs font-heading uppercase tracking-widest text-muted-foreground">Status</th>
-                  <th className="text-left py-3 px-2 text-xs font-heading uppercase tracking-widest text-muted-foreground">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.slice(0, 5).map((order) => (
-                  <tr key={order._id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                    <td className="py-3 px-2 font-mono text-xs text-muted-foreground">{order._id.slice(-8)}</td>
-                    <td className="py-3 px-2">{order.userId?.name || order.userId?.email || "Unknown"}</td>
-                    <td className="py-3 px-2 text-primary font-semibold">{formatPrice(order.totalPrice || 0)}</td>
-                    <td className="py-3 px-2">
-                      <span className={`text-xs font-heading uppercase tracking-widest ${statusColors[order.status] || ""}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
       </motion.div>
     </AdminLayout>

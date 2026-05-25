@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Monitor, Gift, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Users, Settings, LogOut, ChevronLeft, ChevronRight, Monitor, Gift, MessageSquare, BarChart3 } from "lucide-react";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const adminLinks = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
+  { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
   { label: "Website Editor", path: "/admin/website-editor", icon: Monitor, adminOnly: true },
   { label: "Products", path: "/admin/products", icon: Package },
   { label: "Orders", path: "/admin/orders", icon: ShoppingCart },

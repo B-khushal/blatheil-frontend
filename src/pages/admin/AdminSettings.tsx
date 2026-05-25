@@ -18,6 +18,8 @@ const AdminSettings = () => {
   const [isPwUpdating, setIsPwUpdating] = useState(false);
 
   const [usdRate, setUsdRate] = useState<number>(83);
+  const [lastRateSyncedAt, setLastRateSyncedAt] = useState<string | null>(null);
+  const [rateProvider, setRateProvider] = useState<string>("manual/default");
   const [isRateLoading, setIsRateLoading] = useState(false);
   const [isFetchingRate, setIsFetchingRate] = useState(true);
 
@@ -32,6 +34,8 @@ const AdminSettings = () => {
           if (data?.data?.usdRate) {
             setUsdRate(data.data.usdRate);
           }
+          setLastRateSyncedAt(data?.data?.lastRateSyncedAt || null);
+          setRateProvider(data?.data?.rateProvider || "manual/default");
         }
       } catch (err) {
         toast.error("Failed to load currency settings");
@@ -66,6 +70,9 @@ const AdminSettings = () => {
         body: JSON.stringify({ usdRate })
       });
       if (!res.ok) throw new Error("Failed to update rate");
+      const data = await res.json();
+      setLastRateSyncedAt(data?.data?.lastRateSyncedAt || new Date().toISOString());
+      setRateProvider(data?.data?.rateProvider || "manual/admin");
       toast.success("Currency rate updated globally!");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error updating rate");
@@ -206,11 +213,13 @@ const AdminSettings = () => {
                     required 
                     className="w-full bg-transparent border border-border rounded-sm px-3 py-2 text-sm focus:border-primary focus:outline-none" 
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">Example: A rate of 83 means ₹1000 becomes ${(1000/83).toFixed(2)} USD.</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Auto-updates daily from forex provider. Example: A rate of 83 means ₹1000 becomes ${(1000/83).toFixed(2)} USD.</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Last synced: {lastRateSyncedAt ? new Date(lastRateSyncedAt).toLocaleString() : "Not synced yet"}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Source: {rateProvider}</p>
                 </div>
                 <button type="submit" disabled={isRateLoading} className="glow-button gold-gradient px-6 py-3 text-xs font-heading uppercase tracking-widest text-primary-foreground rounded-sm w-full flex justify-center items-center gap-2">
                   {isRateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  Update Exchange Rate
+                  Optional Manual Override
                 </button>
               </form>
             )}

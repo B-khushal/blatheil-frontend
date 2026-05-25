@@ -19,6 +19,23 @@ export type CurrencyCode =
 
 type ExchangeRatesMap = Partial<Record<CurrencyCode, number>>;
 
+const USD_CROSS_RATES: Partial<Record<CurrencyCode, number>> = {
+  USD: 1,
+  AED: 3.6725,
+  AUD: 1.53,
+  GBP: 0.79,
+  EUR: 0.92,
+  CAD: 1.36,
+  SGD: 1.35,
+  JPY: 157,
+  NZD: 1.66,
+  CHF: 0.91,
+  CNY: 7.24,
+  HKD: 7.81,
+  SAR: 3.75,
+  QAR: 3.64,
+};
+
 export const CURRENCY_META: Record<CurrencyCode, { label: string; symbol: string; locale: string }> = {
   INR: { label: "Indian Rupee", symbol: "₹", locale: "en-IN" },
   USD: { label: "US Dollar", symbol: "$", locale: "en-US" },
@@ -55,6 +72,28 @@ const DEFAULT_SUPPORTED: CurrencyCode[] = [
   "QAR",
 ];
 
+export const buildFallbackInrRates = (usdRate: number): ExchangeRatesMap => {
+  const fallback: ExchangeRatesMap = { INR: 1, USD: usdRate };
+
+  for (const code of DEFAULT_SUPPORTED) {
+    if (code === "INR") {
+      fallback.INR = 1;
+      continue;
+    }
+    if (code === "USD") {
+      fallback.USD = usdRate;
+      continue;
+    }
+
+    const usdToCurrency = USD_CROSS_RATES[code];
+    if (typeof usdToCurrency === "number" && usdToCurrency > 0) {
+      fallback[code] = Number((usdRate / usdToCurrency).toFixed(4));
+    }
+  }
+
+  return fallback;
+};
+
 interface CurrencyContextType {
   currency: CurrencyCode;
   setCurrency: (currency: CurrencyCode) => void;
@@ -70,7 +109,7 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currency, setCurrencyState] = useState<CurrencyCode>("INR");
   const [usdRate, setUsdRate] = useState<number>(83); // fallback
-  const [exchangeRates, setExchangeRates] = useState<ExchangeRatesMap>({ INR: 1, USD: 83 });
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRatesMap>(buildFallbackInrRates(83));
   const [supportedCurrencies, setSupportedCurrencies] = useState<CurrencyCode[]>(DEFAULT_SUPPORTED);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -88,12 +127,13 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
         const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
+          const apiUsdRate = Number(data?.data?.usdRate || 83);
           if (data?.data?.usdRate) {
-            setUsdRate(data.data.usdRate);
+            setUsdRate(apiUsdRate);
           }
-          if (data?.data?.exchangeRates) {
-            setExchangeRates(data.data.exchangeRates);
-          }
+          const fallbackRates = buildFallbackInrRates(apiUsdRate);
+          const apiRates = (data?.data?.exchangeRates || {}) as ExchangeRatesMap;
+          setExchangeRates({ ...fallbackRates, ...apiRates, INR: 1, USD: apiUsdRate });
           if (Array.isArray(data?.data?.supportedCurrencies) && data.data.supportedCurrencies.length > 0) {
             const normalized = data.data.supportedCurrencies.filter((code: string) => code in CURRENCY_META) as CurrencyCode[];
             if (normalized.length > 0) {

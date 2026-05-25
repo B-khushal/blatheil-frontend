@@ -3,6 +3,7 @@ import { X, Clock, Tag, ShoppingBag, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useOffer, ActiveOffer } from "@/context/OfferContext";
 import { useCart } from "@/context/CartContext";
+import { useCurrency } from "@/context/CurrencyContext";
 
 export default function OfferPopup() {
   const [offer, setOffer] = useState<ActiveOffer | null>(null);
@@ -11,6 +12,7 @@ export default function OfferPopup() {
 
   const { applyOffer, appliedOffer } = useOffer();
   const { getTotal, items } = useCart();
+  const { formatPrice } = useCurrency();
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
@@ -58,7 +60,7 @@ export default function OfferPopup() {
   const hasDiscount = offer.discountValue > 0;
   const discountLabel =
     offer.discountType === "flat"
-      ? `₹${offer.discountValue} OFF`
+      ? `${formatPrice(offer.discountValue)} OFF`
       : `${offer.discountValue}% OFF`;
 
   return (
@@ -128,7 +130,7 @@ export default function OfferPopup() {
                 <p className="mt-2 text-xs text-zinc-500">
                   Valid on orders above{" "}
                   <span className="text-amber-400/80 font-semibold">
-                    ₹{offer.minimumOrderValue.toLocaleString("en-IN")}
+                    {formatPrice(offer.minimumOrderValue)}
                   </span>
                 </p>
               )}

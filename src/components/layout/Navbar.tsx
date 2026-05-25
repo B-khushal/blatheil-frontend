@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
-import { useCurrency } from "@/context/CurrencyContext";
+import { CURRENCY_META, useCurrency } from "@/context/CurrencyContext";
 import { buildWhatsAppUrl, CONTACT_INSTAGRAM_URL } from "@/lib/contact";
 
 const navLinks = [
@@ -25,7 +25,7 @@ const Navbar = () => {
   const { getItemCount } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
-  const { currency, setCurrency } = useCurrency();
+  const { currency, setCurrency, supportedCurrencies } = useCurrency();
   const location = useLocation();
 
   useEffect(() => {
@@ -111,21 +111,18 @@ const Navbar = () => {
               <button 
                 className="text-xs font-heading font-medium tracking-wide flex items-center gap-1 border border-border/50 rounded-md px-2 py-1 text-foreground/80 hover:text-primary transition-colors"
               >
-                {currency === "INR" ? "₹ INR" : "$ USD"}
+                {`${CURRENCY_META[currency]?.symbol || ""} ${currency}`}
               </button>
-              <div className="absolute right-0 top-full mt-2 w-24 rounded-md border border-slate-700/90 bg-slate-900/95 backdrop-blur-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                <button
-                  onClick={() => setCurrency("INR")}
-                  className={`w-full text-left px-3 py-2 text-xs font-heading hover:bg-slate-800 transition-colors ${currency === "INR" ? "text-primary bg-slate-800/50" : "text-slate-300"}`}
-                >
-                  ₹ INR
-                </button>
-                <button
-                  onClick={() => setCurrency("USD")}
-                  className={`w-full text-left px-3 py-2 text-xs font-heading hover:bg-slate-800 transition-colors ${currency === "USD" ? "text-primary bg-slate-800/50" : "text-slate-300"}`}
-                >
-                  $ USD
-                </button>
+              <div className="absolute right-0 top-full mt-2 w-32 rounded-md border border-slate-700/90 bg-slate-900/95 backdrop-blur-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden max-h-72 overflow-y-auto">
+                {supportedCurrencies.map((code) => (
+                  <button
+                    key={code}
+                    onClick={() => setCurrency(code)}
+                    className={`w-full text-left px-3 py-2 text-xs font-heading hover:bg-slate-800 transition-colors ${currency === code ? "text-primary bg-slate-800/50" : "text-slate-300"}`}
+                  >
+                    {`${CURRENCY_META[code]?.symbol || ""} ${code}`}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -282,6 +279,21 @@ const Navbar = () => {
                 transition={{ delay: navLinks.length * 0.1 }}
                 className="flex flex-col gap-4 mt-8 w-full px-4"
               >
+                <div className="border border-border rounded p-3">
+                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Currency</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {supportedCurrencies.map((code) => (
+                      <button
+                        key={code}
+                        onClick={() => setCurrency(code)}
+                        className={`px-2 py-1.5 text-[11px] rounded border transition-colors ${currency === code ? "border-primary text-primary" : "border-border text-foreground/70 hover:border-primary"}`}
+                      >
+                        {code}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <a
                   href={buildWhatsAppUrl("Hello BLATHEIL, I want to know more about your latest collection.")}
                   target="_blank"

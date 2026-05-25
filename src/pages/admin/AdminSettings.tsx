@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, User, DollarSign, Loader2, Save } from "lucide-react";
+import { Shield, User, Loader2, Save } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY, CONTACT_INSTAGRAM_HANDLE } from "@/lib/contact";
 
 const AdminSettings = () => {
-  const { user, token, changePassword, updateProfile } = useAuth();
+  const { user, changePassword, updateProfile } = useAuth();
   const [oldPw, setOldPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
@@ -17,69 +17,12 @@ const AdminSettings = () => {
   const [isProfileUpdating, setIsProfileUpdating] = useState(false);
   const [isPwUpdating, setIsPwUpdating] = useState(false);
 
-  const [usdRate, setUsdRate] = useState<number>(83);
-  const [lastRateSyncedAt, setLastRateSyncedAt] = useState<string | null>(null);
-  const [rateProvider, setRateProvider] = useState<string>("manual/default");
-  const [isRateLoading, setIsRateLoading] = useState(false);
-  const [isFetchingRate, setIsFetchingRate] = useState(true);
-
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
-
-  useEffect(() => {
-    const fetchRate = async () => {
-      try {
-        const res = await fetch(`${API_URL}/settings`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.data?.usdRate) {
-            setUsdRate(data.data.usdRate);
-          }
-          setLastRateSyncedAt(data?.data?.lastRateSyncedAt || null);
-          setRateProvider(data?.data?.rateProvider || "manual/default");
-        }
-      } catch (err) {
-        toast.error("Failed to load currency settings");
-      } finally {
-        setIsFetchingRate(false);
-      }
-    };
-    fetchRate();
-  }, [API_URL]);
-
   useEffect(() => {
     if (user) {
       setProfileName(user.name || "");
       setProfileEmail(user.email || "");
     }
   }, [user]);
-
-  const handleRateUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) {
-       toast.error("Not authenticated");
-       return;
-    }
-    setIsRateLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/settings/currency-rate`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ usdRate })
-      });
-      if (!res.ok) throw new Error("Failed to update rate");
-      const data = await res.json();
-      setLastRateSyncedAt(data?.data?.lastRateSyncedAt || new Date().toISOString());
-      setRateProvider(data?.data?.rateProvider || "manual/admin");
-      toast.success("Currency rate updated globally!");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error updating rate");
-    } finally {
-      setIsRateLoading(false);
-    }
-  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,46 +126,6 @@ const AdminSettings = () => {
                 Update Password
               </button>
             </form>
-          </div>
-
-          {/* Currency Configuration */}
-          <div className="glass-card p-6 lg:col-span-2">
-            <div className="flex items-center gap-3 mb-6">
-              <DollarSign className="w-5 h-5 text-primary" />
-              <h2 className="font-heading uppercase tracking-widest text-sm">Currency Configuration</h2>
-            </div>
-            {isFetchingRate ? (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                <Loader2 className="w-4 h-4 animate-spin" /> Loading configuration...
-              </div>
-            ) : (
-              <form onSubmit={handleRateUpdate} className="space-y-4 max-w-sm">
-                <div>
-                  <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">Base Currency</label>
-                  <input value="INR (₹)" disabled className="w-full bg-secondary/50 border border-border rounded-sm px-3 py-2 text-sm text-muted-foreground" />
-                  <p className="text-[10px] text-muted-foreground mt-1">All products in the database default to INR.</p>
-                </div>
-                <div>
-                  <label className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1 block">USD Conversion Rate ($1 USD = ? INR)</label>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    min="1"
-                    value={usdRate} 
-                    onChange={(e) => setUsdRate(Number(e.target.value))} 
-                    required 
-                    className="w-full bg-transparent border border-border rounded-sm px-3 py-2 text-sm focus:border-primary focus:outline-none" 
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1">Auto-updates daily from forex provider. Example: A rate of 83 means ₹1000 becomes ${(1000/83).toFixed(2)} USD.</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Last synced: {lastRateSyncedAt ? new Date(lastRateSyncedAt).toLocaleString() : "Not synced yet"}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Source: {rateProvider}</p>
-                </div>
-                <button type="submit" disabled={isRateLoading} className="glow-button gold-gradient px-6 py-3 text-xs font-heading uppercase tracking-widest text-primary-foreground rounded-sm w-full flex justify-center items-center gap-2">
-                  {isRateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  Optional Manual Override
-                </button>
-              </form>
-            )}
           </div>
 
           <div className="glass-card p-6 lg:col-span-2">

@@ -41,6 +41,7 @@ import WebsiteEditor from "./pages/admin/WebsiteEditor";
 import AdminOffers from "./pages/admin/AdminOffers";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminCurrencies from "./pages/admin/AdminCurrencies";
 import OfferPopup from "@/components/OfferPopup";
 
 const queryClient = new QueryClient();
@@ -110,6 +111,7 @@ const App = () => (
                 <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
                 <Route path="/admin/analytics" element={<ProtectedRoute requiredRole="admin"><AdminAnalytics /></ProtectedRoute>} />
+                <Route path="/admin/currencies" element={<ProtectedRoute requiredRole="admin"><AdminCurrencies /></ProtectedRoute>} />
                 <Route path="/admin/products" element={<ProtectedRoute requiredRole="admin"><AdminProducts /></ProtectedRoute>} />
                 <Route path="/admin/orders" element={<ProtectedRoute requiredRole="admin"><AdminOrders /></ProtectedRoute>} />
                 <Route path="/admin/reviews" element={<ProtectedRoute requiredRole="admin"><AdminReviews /></ProtectedRoute>} />

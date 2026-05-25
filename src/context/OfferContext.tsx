@@ -175,7 +175,7 @@ export const OfferProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (minVal && minVal > 0 && subtotal < minVal) {
         return {
           eligible: false,
-          message: `Offer valid on orders above ₹${minVal.toLocaleString("en-IN")}`,
+          message: `Offer valid on orders above minimum value ${minVal.toLocaleString("en-IN")}`,
         };
       }
       return { eligible: true };
@@ -188,7 +188,7 @@ export const OfferProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     (offer: ActiveOffer, subtotal = 0): boolean => {
       // Validate minimum order
       if (offer.minimumOrderValue && offer.minimumOrderValue > 0 && subtotal < offer.minimumOrderValue) {
-        toast.error(`This offer requires a minimum order of ₹${offer.minimumOrderValue.toLocaleString("en-IN")}`);
+        toast.error(`This offer requires a minimum order of ${offer.minimumOrderValue.toLocaleString("en-IN")}`);
         return false;
       }
 
@@ -213,7 +213,7 @@ export const OfferProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       toast.success(
         offer.discountType === "percentage"
           ? `✔ ${offer.discountValue}% discount applied!`
-          : `✔ ₹${offer.discountValue} discount applied!`
+          : `✔ Flat discount applied!`
       );
       return true;
     },

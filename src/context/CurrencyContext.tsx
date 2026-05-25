@@ -1,11 +1,66 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
-type CurrencyType = "INR" | "USD";
+export type CurrencyCode =
+  | "INR"
+  | "USD"
+  | "AED"
+  | "AUD"
+  | "GBP"
+  | "EUR"
+  | "CAD"
+  | "SGD"
+  | "JPY"
+  | "NZD"
+  | "CHF"
+  | "CNY"
+  | "HKD"
+  | "SAR"
+  | "QAR";
+
+type ExchangeRatesMap = Partial<Record<CurrencyCode, number>>;
+
+export const CURRENCY_META: Record<CurrencyCode, { label: string; symbol: string; locale: string }> = {
+  INR: { label: "Indian Rupee", symbol: "₹", locale: "en-IN" },
+  USD: { label: "US Dollar", symbol: "$", locale: "en-US" },
+  AED: { label: "UAE Dirham", symbol: "د.إ", locale: "en-AE" },
+  AUD: { label: "Australian Dollar", symbol: "A$", locale: "en-AU" },
+  GBP: { label: "British Pound", symbol: "£", locale: "en-GB" },
+  EUR: { label: "Euro", symbol: "€", locale: "en-IE" },
+  CAD: { label: "Canadian Dollar", symbol: "C$", locale: "en-CA" },
+  SGD: { label: "Singapore Dollar", symbol: "S$", locale: "en-SG" },
+  JPY: { label: "Japanese Yen", symbol: "¥", locale: "ja-JP" },
+  NZD: { label: "New Zealand Dollar", symbol: "NZ$", locale: "en-NZ" },
+  CHF: { label: "Swiss Franc", symbol: "CHF", locale: "de-CH" },
+  CNY: { label: "Chinese Yuan", symbol: "¥", locale: "zh-CN" },
+  HKD: { label: "Hong Kong Dollar", symbol: "HK$", locale: "en-HK" },
+  SAR: { label: "Saudi Riyal", symbol: "﷼", locale: "ar-SA" },
+  QAR: { label: "Qatari Riyal", symbol: "﷼", locale: "ar-QA" },
+};
+
+const DEFAULT_SUPPORTED: CurrencyCode[] = [
+  "INR",
+  "USD",
+  "AED",
+  "AUD",
+  "GBP",
+  "EUR",
+  "CAD",
+  "SGD",
+  "JPY",
+  "NZD",
+  "CHF",
+  "CNY",
+  "HKD",
+  "SAR",
+  "QAR",
+];
 
 interface CurrencyContextType {
-  currency: CurrencyType;
-  setCurrency: (currency: CurrencyType) => void;
+  currency: CurrencyCode;
+  setCurrency: (currency: CurrencyCode) => void;
   usdRate: number;
+  exchangeRates: ExchangeRatesMap;
+  supportedCurrencies: CurrencyCode[];
   formatPrice: (amount: number) => string;
   loading: boolean;
 }
@@ -13,16 +68,18 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currency, setCurrencyState] = useState<CurrencyType>("INR");
+  const [currency, setCurrencyState] = useState<CurrencyCode>("INR");
   const [usdRate, setUsdRate] = useState<number>(83); // fallback
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRatesMap>({ INR: 1, USD: 83 });
+  const [supportedCurrencies, setSupportedCurrencies] = useState<CurrencyCode[]>(DEFAULT_SUPPORTED);
   const [loading, setLoading] = useState<boolean>(true);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
   useEffect(() => {
     // Load preference from local storage
-    const savedCurrency = localStorage.getItem("blatheil_currency") as CurrencyType;
-    if (savedCurrency === "USD" || savedCurrency === "INR") {
+    const savedCurrency = localStorage.getItem("blatheil_currency") as CurrencyCode;
+    if (savedCurrency && (DEFAULT_SUPPORTED as string[]).includes(savedCurrency)) {
       setCurrencyState(savedCurrency);
     }
 
@@ -34,6 +91,19 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
           if (data?.data?.usdRate) {
             setUsdRate(data.data.usdRate);
           }
+          if (data?.data?.exchangeRates) {
+            setExchangeRates(data.data.exchangeRates);
+          }
+          if (Array.isArray(data?.data?.supportedCurrencies) && data.data.supportedCurrencies.length > 0) {
+            const normalized = data.data.supportedCurrencies.filter((code: string) => code in CURRENCY_META) as CurrencyCode[];
+            if (normalized.length > 0) {
+              setSupportedCurrencies(normalized);
+              if (!normalized.includes(savedCurrency)) {
+                setCurrencyState("INR");
+                localStorage.setItem("blatheil_currency", "INR");
+              }
+            }
+          }
         }
       } catch (err) {
         console.error("Failed to fetch USD conversion rate", err);
@@ -42,25 +112,38 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
     };
     fetchRate();
+
+    // Keep client-side conversion fresh while app is open.
+    const interval = window.setInterval(fetchRate, 60 * 60 * 1000);
+    return () => window.clearInterval(interval);
   }, []);
 
-  const setCurrency = (c: CurrencyType) => {
+  const setCurrency = (c: CurrencyCode) => {
+    if (!supportedCurrencies.includes(c)) return;
     setCurrencyState(c);
     localStorage.setItem("blatheil_currency", c);
   };
 
   const formatPrice = (amount: number): string => {
-    if (currency === "USD") {
-      // Convert INR to USD and apply $ symbol
-      const converted = amount / usdRate;
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(converted);
+    if (currency !== "INR") {
+      const inrPerUnit = exchangeRates[currency];
+      const safeRate = typeof inrPerUnit === "number" && inrPerUnit > 0
+        ? inrPerUnit
+        : currency === "USD"
+          ? usdRate
+          : undefined;
+
+      if (safeRate) {
+        const converted = amount / safeRate;
+        return new Intl.NumberFormat(CURRENCY_META[currency].locale, {
+          style: "currency",
+          currency,
+          minimumFractionDigits: currency === "JPY" ? 0 : 2,
+          maximumFractionDigits: currency === "JPY" ? 0 : 2,
+        }).format(converted);
+      }
     }
-    
+
     // Default to INR
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -70,7 +153,7 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, usdRate, formatPrice, loading }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, usdRate, exchangeRates, supportedCurrencies, formatPrice, loading }}>
       {children}
     </CurrencyContext.Provider>
   );

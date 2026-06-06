@@ -12,7 +12,7 @@ const ChangePassword = () => {
   const { changePassword } = useAdminAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPw.length < 6) {
       toast.error("Password must be at least 6 characters");
@@ -22,13 +22,17 @@ const ChangePassword = () => {
       toast.error("Passwords do not match");
       return;
     }
-    const success = changePassword(oldPw, newPw);
-    if (!success) {
-      toast.error("Current password is incorrect");
-      return;
+    try {
+      const success = await changePassword(oldPw, newPw);
+      if (!success) {
+        toast.error("Current password is incorrect");
+        return;
+      }
+      toast.success("Password changed successfully!");
+      navigate("/admin");
+    } catch (err) {
+      toast.error("An unexpected error occurred while changing password.");
     }
-    toast.success("Password changed successfully!");
-    navigate("/admin");
   };
 
   return (

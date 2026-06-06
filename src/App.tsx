@@ -43,6 +43,7 @@ import AdminReviews from "./pages/admin/AdminReviews";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminCurrencies from "./pages/admin/AdminCurrencies";
 import OfferPopup from "@/components/OfferPopup";
+import Unauthorized from "./pages/Unauthorized";
 
 const queryClient = new QueryClient();
 
@@ -107,18 +108,21 @@ const App = () => (
                 <Route path="/refund-policy" element={<RefundPolicy />} />
                 <Route path="/cancellation-policy" element={<CancellationPolicy />} />
 
+                {/* Unauthorized */}
+                <Route path="/unauthorized" element={<Unauthorized />} />
+
                 {/* Admin */}
                 <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/admin/analytics" element={<ProtectedRoute requiredRole="admin"><AdminAnalytics /></ProtectedRoute>} />
-                <Route path="/admin/currencies" element={<ProtectedRoute requiredRole="admin"><AdminCurrencies /></ProtectedRoute>} />
-                <Route path="/admin/products" element={<ProtectedRoute requiredRole="admin"><AdminProducts /></ProtectedRoute>} />
-                <Route path="/admin/orders" element={<ProtectedRoute requiredRole="admin"><AdminOrders /></ProtectedRoute>} />
-                <Route path="/admin/reviews" element={<ProtectedRoute requiredRole="admin"><AdminReviews /></ProtectedRoute>} />
-                <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
-                <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
-                <Route path="/admin/website-editor" element={<ProtectedRoute requiredRole="admin"><WebsiteEditor /></ProtectedRoute>} />
-                <Route path="/admin/offers" element={<ProtectedRoute requiredRole="admin"><AdminOffers /></ProtectedRoute>} />
+                <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={["admin", "manager", "sales_person"]}><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnalytics /></ProtectedRoute>} />
+                <Route path="/admin/currencies" element={<ProtectedRoute allowedRoles={["admin", "manager"]}><AdminCurrencies /></ProtectedRoute>} />
+                <Route path="/admin/products" element={<ProtectedRoute allowedRoles={["admin", "manager", "sales_person"]}><AdminProducts /></ProtectedRoute>} />
+                <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={["admin", "manager", "sales_person"]}><AdminOrders /></ProtectedRoute>} />
+                <Route path="/admin/reviews" element={<ProtectedRoute allowedRoles={["admin", "manager"]}><AdminReviews /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsers /></ProtectedRoute>} />
+                <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={["admin", "manager"]}><AdminSettings /></ProtectedRoute>} />
+                <Route path="/admin/website-editor" element={<ProtectedRoute allowedRoles={["admin", "manager"]}><WebsiteEditor /></ProtectedRoute>} />
+                <Route path="/admin/offers" element={<ProtectedRoute allowedRoles={["admin", "manager"]}><AdminOffers /></ProtectedRoute>} />
 
                 <Route path="*" element={<NotFound />} />
                   </Routes>

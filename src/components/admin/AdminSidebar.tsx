@@ -6,16 +6,16 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const adminLinks = [
-  { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
-  { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
-  { label: "Currencies", path: "/admin/currencies", icon: DollarSign, adminOnly: true },
-  { label: "Website Editor", path: "/admin/website-editor", icon: Monitor, adminOnly: true },
-  { label: "Products", path: "/admin/products", icon: Package },
-  { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
-  { label: "Reviews", path: "/admin/reviews", icon: MessageSquare, adminOnly: true },
-  { label: "Users", path: "/admin/users", icon: Users, adminOnly: true },
-  { label: "Offers", path: "/admin/offers", icon: Gift, adminOnly: true },
-  { label: "Settings", path: "/admin/settings", icon: Settings },
+  { label: "Dashboard", path: "/admin", icon: LayoutDashboard, allowedRoles: ["admin", "manager", "sales_person"] },
+  { label: "Analytics", path: "/admin/analytics", icon: BarChart3, allowedRoles: ["admin"] },
+  { label: "Currencies", path: "/admin/currencies", icon: DollarSign, allowedRoles: ["admin", "manager"] },
+  { label: "Website Editor", path: "/admin/website-editor", icon: Monitor, allowedRoles: ["admin", "manager"] },
+  { label: "Products", path: "/admin/products", icon: Package, allowedRoles: ["admin", "manager", "sales_person"] },
+  { label: "Orders", path: "/admin/orders", icon: ShoppingCart, allowedRoles: ["admin", "manager", "sales_person"] },
+  { label: "Reviews", path: "/admin/reviews", icon: MessageSquare, allowedRoles: ["admin", "manager"] },
+  { label: "Users", path: "/admin/users", icon: Users, allowedRoles: ["admin"] },
+  { label: "Offers", path: "/admin/offers", icon: Gift, allowedRoles: ["admin", "manager"] },
+  { label: "Settings", path: "/admin/settings", icon: Settings, allowedRoles: ["admin", "manager"] },
 ];
 
 const AdminSidebar = () => {
@@ -32,7 +32,7 @@ const AdminSidebar = () => {
   };
 
   const activeUser = backendUser || adminUser;
-  const visibleLinks = adminLinks.filter((l) => !l.adminOnly || activeUser?.role === "admin");
+  const visibleLinks = adminLinks.filter((l) => activeUser && l.allowedRoles.includes(activeUser.role));
 
   return (
     <motion.aside
@@ -103,8 +103,14 @@ const AdminSidebar = () => {
           <div className="mb-2 px-2">
             <p className="text-xs font-heading uppercase tracking-wider text-foreground truncate">{activeUser?.name}</p>
             <p className="text-[10px] text-muted-foreground truncate">{activeUser?.email}</p>
-            <span className="inline-block mt-1 text-[9px] font-heading uppercase tracking-widest px-2 py-0.5 rounded-sm gold-gradient text-primary-foreground">
-              {activeUser?.role}
+            <span className={`inline-block mt-1 text-[9px] font-heading uppercase tracking-widest px-2 py-0.5 rounded-sm font-bold ${
+              activeUser?.role === "admin"
+                ? "gold-gradient text-primary-foreground"
+                : activeUser?.role === "manager"
+                ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
+                : "bg-emerald-600/20 text-emerald-400 border border-emerald-500/30"
+            }`}>
+              {activeUser?.role === "sales_person" ? "Sales Person" : activeUser?.role}
             </span>
           </div>
         )}

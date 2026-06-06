@@ -4,7 +4,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "user" | "admin" | "staff";
+  role: "user" | "admin" | "manager" | "sales_person" | "staff";
   mustChangePassword: boolean;
   provider?: "local" | "google";
   profileImage?: string;
@@ -16,7 +16,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   signup: (name: string, email: string, password: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -121,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       // Fetch full user data
       await fetchUser(newToken);
+      return data.data.user;
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "staff";
+  role: "admin" | "manager" | "sales_person";
   mustChangePassword: boolean;
   createdAt: string;
 }

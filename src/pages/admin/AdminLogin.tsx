@@ -14,11 +14,11 @@ const AdminLogin = () => {
   const { login } = useAdminAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      const result = login(email, password);
+    try {
+      const result = await login(email, password);
       setLoading(false);
       if (!result.success) {
         toast.error(result.error || "Login failed");
@@ -30,7 +30,10 @@ const AdminLogin = () => {
       } else {
         navigate("/admin");
       }
-    }, 600);
+    } catch (err) {
+      setLoading(false);
+      toast.error("An unexpected error occurred during login.");
+    }
   };
 
   return (

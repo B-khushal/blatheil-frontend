@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ShoppingBag, Menu, X, LogOut, User, Heart, Package } from "lucide-react";
+import { ShoppingBag, Menu, X, LogOut, User, Heart, Package, LayoutDashboard } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useAuth } from "@/context/AuthContext";
-import { CURRENCY_META, useCurrency } from "@/context/CurrencyContext";
+import { useCurrency, COUNTRIES } from "@/context/CurrencyContext";
 import { buildWhatsAppUrl, CONTACT_INSTAGRAM_URL } from "@/lib/contact";
 
 const navLinks = [
@@ -25,7 +25,7 @@ const Navbar = () => {
   const { getItemCount } = useCart();
   const { items: wishlistItems } = useWishlist();
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
-  const { currency, setCurrency, supportedCurrencies } = useCurrency();
+  const { currency, setCurrency, supportedCurrencies, country, setIsModalOpen } = useCurrency();
   const location = useLocation();
 
   useEffect(() => {
@@ -106,25 +106,14 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Currency Selector */}
-            <div className="relative group">
-              <button 
-                className="text-xs font-heading font-medium tracking-wide flex items-center gap-1 border border-border/50 rounded-md px-2 py-1 text-foreground/80 hover:text-primary transition-colors"
-              >
-                {`${CURRENCY_META[currency]?.symbol || ""} ${currency}`}
-              </button>
-              <div className="absolute right-0 top-full mt-2 w-32 rounded-md border border-slate-700/90 bg-slate-900/95 backdrop-blur-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden max-h-72 overflow-y-auto">
-                {supportedCurrencies.map((code) => (
-                  <button
-                    key={code}
-                    onClick={() => setCurrency(code)}
-                    className={`w-full text-left px-3 py-2 text-xs font-heading hover:bg-slate-800 transition-colors ${currency === code ? "text-primary bg-slate-800/50" : "text-slate-300"}`}
-                  >
-                    {`${CURRENCY_META[code]?.symbol || ""} ${code}`}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Region & Currency Selector */}
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="text-xs font-heading font-medium tracking-wide flex items-center gap-1.5 border border-border/50 rounded-md px-2 py-1.5 text-foreground/80 hover:text-primary transition-colors bg-secondary/10 hover:bg-secondary/35"
+            >
+              <span className="text-base leading-none">{COUNTRIES.find((c) => c.code === country)?.flag || "🏳️"}</span>
+              <span>{currency}</span>
+            </button>
 
             <Link to="/wishlist" className="relative group">
               <Heart className="w-5 h-5 text-foreground/70 group-hover:text-primary transition-colors" />
@@ -156,12 +145,12 @@ const Navbar = () => {
             {/* Auth Links */}
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
-                {isAdmin && (
+                {user && ["admin", "manager", "sales_person"].includes(user.role) && (
                   <Link
                     to="/admin/dashboard"
-                    className="text-sm text-primary hover:text-primary/80 px-2 py-1"
+                    className="text-xs font-heading uppercase tracking-wider text-primary hover:text-primary/80 px-2 py-1"
                   >
-                    Admin
+                    {user.role === "admin" ? "Admin" : "Panel"}
                   </Link>
                 )}
                 <div className="relative" ref={accountMenuRef}>
@@ -191,6 +180,17 @@ const Navbar = () => {
                         <p className="px-4 py-2.5 text-sm text-slate-300 border-b border-slate-700/80 truncate">
                           {user?.name}
                         </p>
+
+                        {user && ["admin", "manager", "sales_person"].includes(user.role) && (
+                          <Link
+                            to="/admin/dashboard"
+                            onClick={() => setIsAccountMenuOpen(false)}
+                            className="mx-1.5 mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 transition-colors font-semibold"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-primary" />
+                            Panel
+                          </Link>
+                        )}
 
                         <Link
                           to="/my-orders"
@@ -279,19 +279,23 @@ const Navbar = () => {
                 transition={{ delay: navLinks.length * 0.1 }}
                 className="flex flex-col gap-4 mt-8 w-full px-4"
               >
-                <div className="border border-border rounded p-3">
-                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">Currency</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {supportedCurrencies.map((code) => (
-                      <button
-                        key={code}
-                        onClick={() => setCurrency(code)}
-                        className={`px-2 py-1.5 text-[11px] rounded border transition-colors ${currency === code ? "border-primary text-primary" : "border-border text-foreground/70 hover:border-primary"}`}
-                      >
-                        {code}
-                      </button>
-                    ))}
-                  </div>
+                <div className="border border-border rounded-xl p-3 bg-secondary/15">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-3 font-heading">Region & Currency</p>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      setIsModalOpen(true);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 bg-background/50 border border-border rounded-lg text-sm text-foreground/90 font-medium"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{COUNTRIES.find((c) => c.code === country)?.flag || "🏳️"}</span>
+                      <span className="font-heading uppercase tracking-wider text-xs">
+                        {COUNTRIES.find((c) => c.code === country)?.name || "Select Country"} ({currency})
+                      </span>
+                    </div>
+                    <span className="text-primary text-[10px] font-heading uppercase tracking-widest">Change</span>
+                  </button>
                 </div>
 
                 <a
@@ -319,12 +323,12 @@ const Navbar = () => {
                     >
                       My Orders
                     </Link>
-                    {isAdmin && (
+                    {user && ["admin", "manager", "sales_person"].includes(user.role) && (
                       <Link
                         to="/admin/dashboard"
-                        className="text-center py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                        className="text-center py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded font-heading uppercase tracking-wider text-xs"
                       >
-                        Admin Dashboard
+                        {user.role === "admin" ? "Admin Dashboard" : "Panel"}
                       </Link>
                     )}
                     <button

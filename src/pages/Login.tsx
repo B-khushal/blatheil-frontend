@@ -8,7 +8,7 @@ import logo from "@/assets/logo.png";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle, isAuthenticated, isAdmin } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -35,10 +35,11 @@ export default function Login() {
   ];
 
   React.useEffect(() => {
-    if (isAuthenticated) {
-      navigate(isAdmin ? "/admin/dashboard" : "/shop");
+    if (isAuthenticated && user) {
+      const isStaff = ["admin", "manager", "sales_person"].includes(user.role);
+      navigate(isStaff ? "/admin/dashboard" : "/shop");
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

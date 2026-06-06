@@ -24,7 +24,7 @@ const categories = ["Hoodies", "Tees", "Bottoms", "Outerwear", "Accessories", "S
 const allSizes = ["S", "M", "L", "XL", "XXL", "One Size"];
 
 const AdminProducts = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { formatPrice } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -197,9 +197,11 @@ const AdminProducts = () => {
             <h1 className="text-3xl font-heading font-bold uppercase">Products</h1>
             <p className="text-sm text-muted-foreground">{products.length} products</p>
           </div>
-          <button onClick={openCreate} className="glow-button gold-gradient px-5 py-2.5 text-xs font-heading uppercase tracking-widest text-primary-foreground rounded-sm flex items-center gap-2 w-fit">
-            <Plus className="w-4 h-4" /> Add Product
-          </button>
+          {user?.role !== "sales_person" && (
+            <button onClick={openCreate} className="glow-button gold-gradient px-5 py-2.5 text-xs font-heading uppercase tracking-widest text-primary-foreground rounded-sm flex items-center gap-2 w-fit">
+              <Plus className="w-4 h-4" /> Add Product
+            </button>
+          )}
         </div>
 
         {/* Search */}
@@ -232,20 +234,22 @@ const AdminProducts = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
-                <button onClick={() => openEdit(p)} className="flex items-center gap-1 px-2 py-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
-                  <Pencil className="w-3 h-3" /> Edit
-                </button>
-                <button onClick={() => toggleFeatured(p)} className="flex items-center gap-1 px-2 py-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
-                  <Star className="w-3 h-3" /> {p.isFeatured ? "Unfeature" : "Feature"}
-                </button>
-                <button onClick={() => toggleSoldOut(p)} className="flex items-center gap-1 px-2 py-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
-                  <XCircle className="w-3 h-3" /> {p.isSoldOut ? "Restock" : "Sold Out"}
-                </button>
-                <button onClick={() => handleDelete(p._id)} className="ml-auto flex items-center gap-1 px-2 py-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors">
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
+              {user?.role !== "sales_person" && (
+                <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
+                  <button onClick={() => openEdit(p)} className="flex items-center gap-1 px-2 py-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+                    <Pencil className="w-3 h-3" /> Edit
+                  </button>
+                  <button onClick={() => toggleFeatured(p)} className="flex items-center gap-1 px-2 py-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+                    <Star className="w-3 h-3" /> {p.isFeatured ? "Unfeature" : "Feature"}
+                  </button>
+                  <button onClick={() => toggleSoldOut(p)} className="flex items-center gap-1 px-2 py-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">
+                    <XCircle className="w-3 h-3" /> {p.isSoldOut ? "Restock" : "Sold Out"}
+                  </button>
+                  <button onClick={() => handleDelete(p._id)} className="ml-auto flex items-center gap-1 px-2 py-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

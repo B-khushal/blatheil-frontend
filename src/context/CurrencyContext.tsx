@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { CountryCurrencyModal } from "@/components/CountryCurrencyModal";
 
 export type CurrencyCode =
   | "INR"
@@ -10,12 +11,7 @@ export type CurrencyCode =
   | "CAD"
   | "SGD"
   | "JPY"
-  | "NZD"
-  | "CHF"
-  | "CNY"
-  | "HKD"
-  | "SAR"
-  | "QAR";
+  | "NZD";
 
 type ExchangeRatesMap = Partial<Record<CurrencyCode, number>>;
 
@@ -29,11 +25,6 @@ const USD_CROSS_RATES: Partial<Record<CurrencyCode, number>> = {
   SGD: 1.35,
   JPY: 157,
   NZD: 1.66,
-  CHF: 0.91,
-  CNY: 7.24,
-  HKD: 7.81,
-  SAR: 3.75,
-  QAR: 3.64,
 };
 
 export const CURRENCY_META: Record<CurrencyCode, { label: string; symbol: string; locale: string }> = {
@@ -47,11 +38,6 @@ export const CURRENCY_META: Record<CurrencyCode, { label: string; symbol: string
   SGD: { label: "Singapore Dollar", symbol: "S$", locale: "en-SG" },
   JPY: { label: "Japanese Yen", symbol: "¥", locale: "ja-JP" },
   NZD: { label: "New Zealand Dollar", symbol: "NZ$", locale: "en-NZ" },
-  CHF: { label: "Swiss Franc", symbol: "CHF", locale: "de-CH" },
-  CNY: { label: "Chinese Yuan", symbol: "¥", locale: "zh-CN" },
-  HKD: { label: "Hong Kong Dollar", symbol: "HK$", locale: "en-HK" },
-  SAR: { label: "Saudi Riyal", symbol: "﷼", locale: "ar-SA" },
-  QAR: { label: "Qatari Riyal", symbol: "﷼", locale: "ar-QA" },
 };
 
 const DEFAULT_SUPPORTED: CurrencyCode[] = [
@@ -65,11 +51,30 @@ const DEFAULT_SUPPORTED: CurrencyCode[] = [
   "SGD",
   "JPY",
   "NZD",
-  "CHF",
-  "CNY",
-  "HKD",
-  "SAR",
-  "QAR",
+];
+
+export interface CountryOption {
+  code: string;
+  name: string;
+  currency: CurrencyCode;
+  flag: string;
+}
+
+export const COUNTRIES: CountryOption[] = [
+  { code: "IN", name: "India", currency: "INR", flag: "🇮🇳" },
+  { code: "US", name: "United States", currency: "USD", flag: "🇺🇸" },
+  { code: "GB", name: "United Kingdom", currency: "GBP", flag: "🇬🇧" },
+  { code: "AE", name: "United Arab Emirates", currency: "AED", flag: "🇦🇪" },
+  { code: "JP", name: "Japan", currency: "JPY", flag: "🇯🇵" },
+  { code: "AU", name: "Australia", currency: "AUD", flag: "🇦🇺" },
+  { code: "CA", name: "Canada", currency: "CAD", flag: "🇨🇦" },
+  { code: "DE", name: "Germany", currency: "EUR", flag: "🇩🇪" },
+  { code: "FR", name: "France", currency: "EUR", flag: "🇫🇷" },
+  { code: "IT", name: "Italy", currency: "EUR", flag: "🇮🇹" },
+  { code: "ES", name: "Spain", currency: "EUR", flag: "🇪🇸" },
+  { code: "NL", name: "Netherlands", currency: "EUR", flag: "🇳🇱" },
+  { code: "SG", name: "Singapore", currency: "SGD", flag: "🇸🇬" },
+  { code: "NZ", name: "New Zealand", currency: "NZD", flag: "🇳🇿" },
 ];
 
 export const buildFallbackInrRates = (usdRate: number): ExchangeRatesMap => {
@@ -102,12 +107,18 @@ interface CurrencyContextType {
   supportedCurrencies: CurrencyCode[];
   formatPrice: (amount: number) => string;
   loading: boolean;
+  country: string;
+  setCountry: (country: string) => void;
+  isModalOpen: boolean;
+  setIsModalOpen: (open: boolean) => void;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currency, setCurrencyState] = useState<CurrencyCode>("INR");
+  const [country, setCountryState] = useState<string>("IN");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [usdRate, setUsdRate] = useState<number>(83); // fallback
   const [exchangeRates, setExchangeRates] = useState<ExchangeRatesMap>(buildFallbackInrRates(83));
   const [supportedCurrencies, setSupportedCurrencies] = useState<CurrencyCode[]>(DEFAULT_SUPPORTED);
@@ -116,10 +127,16 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
   useEffect(() => {
-    // Load preference from local storage
     const savedCurrency = localStorage.getItem("blatheil_currency") as CurrencyCode;
     if (savedCurrency && (DEFAULT_SUPPORTED as string[]).includes(savedCurrency)) {
       setCurrencyState(savedCurrency);
+    }
+
+    const savedCountry = localStorage.getItem("blatheil_country");
+    if (savedCountry) {
+      setCountryState(savedCountry);
+    } else {
+      setIsModalOpen(true);
     }
 
     const fetchRate = async () => {
@@ -153,7 +170,6 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
     fetchRate();
 
-    // Keep client-side conversion fresh while app is open.
     const interval = window.setInterval(fetchRate, 60 * 60 * 1000);
     return () => window.clearInterval(interval);
   }, []);
@@ -162,6 +178,11 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     if (!supportedCurrencies.includes(c)) return;
     setCurrencyState(c);
     localStorage.setItem("blatheil_currency", c);
+  };
+
+  const setCountry = (c: string) => {
+    setCountryState(c);
+    localStorage.setItem("blatheil_country", c);
   };
 
   const formatPrice = (amount: number): string => {
@@ -184,7 +205,6 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
     }
 
-    // Default to INR
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
@@ -193,8 +213,9 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, usdRate, exchangeRates, supportedCurrencies, formatPrice, loading }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, usdRate, exchangeRates, supportedCurrencies, formatPrice, loading, country, setCountry, isModalOpen, setIsModalOpen }}>
       {children}
+      <CountryCurrencyModal />
     </CurrencyContext.Provider>
   );
 };
